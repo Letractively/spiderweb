@@ -32,7 +32,7 @@
   </target>
 
   <target name="spiderweb-jar" depends="compile">
-    <jar jarfile="${dist}/${spiderweb-jar}" basedir="${bin}/"/>
+    <jar jarfile="${dist}/${spiderweb-jar}" basedir="${bin}/" manifest="manifest.mf"/>
   </target>
 
   <target name="docs" depends="compile" description="generate JavaDoc">

@@ -494,7 +494,7 @@ public abstract class SpiderServlet extends HttpServlet {
 			String cn = taskPackage + tn;
 			Class<?> c;
 			try {
-				c = Class.forName(cn);
+				c = Class.forName(cn, true, Thread.currentThread().getContextClassLoader());
 			} catch (ClassNotFoundException e) {
 				throw new RuntimeException("No class " + cn);
 			}

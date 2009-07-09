@@ -1,0 +1,27 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Spider
+Bundle-SymbolicName: com.medallia.spider
+Bundle-Version: 1.0.0
+Bundle-Vendor: Medallia
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Export-Package: com.medallia.spider; uses:="com.medallia.spider.api,  
+ org.antlr.stringtemplate,  com.medallia.spider.sttools,  org.apache.c
+ ommons.logging,  com.medallia.tiny.web,  com.medallia.tiny.string,  c
+ om.medallia.tiny,  javax.servlet,  javax.servlet.http",com.medallia.s
+ pider.api; uses:="com.medallia.tiny,  antlr.collections,  org.antlr.s
+ tringtemplate.language,  org.antlr.stringtemplate,  com.medallia.spid
+ er.sttools,  com.medallia.tiny.string,  org.apache.commons.lang",com.
+ medallia.spider.st,com.medallia.spider.st.pages,com.medallia.spider.s
+ ttools; uses:="com.medallia.tiny,  org.antlr.stringtemplate,  com.med
+ allia.tiny.string,  com.medallia.spider",com.medallia.spider.test; us
+ es:="javax.servlet,  com.medallia.tiny.web,  com.medallia.spider,  ja
+ vax.servlet.http,  com.medallia.tiny,  com.medallia.tiny.test",com.me
+ dallia.tiny,com.medallia.tiny.string,com.medallia.tiny.test,com.medal
+ lia.tiny.web
+Import-Package: javax.activation,javax.servlet,javax.servlet.http,org.
+ antlr.stringtemplate,org.antlr.stringtemplate.language,org.apache.com
+ mons.lang,org.apache.commons.logging,org.mortbay.component,org.mortba
+ y.jetty,org.mortbay.jetty.bio,org.mortbay.jetty.handler,org.mortbay.j
+ etty.webapp,org.mortbay.util,junit.framework;resolution:=optional
+
