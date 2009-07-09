@@ -288,7 +288,7 @@ public abstract class StRenderer {
 		
 		Class<Output> outputInterface = findInterfaceWithAnnotation(OUTPUT_ANNOTATION_MAP, renderable.getClass(), Output.class);
 		if (outputInterface != null) {
-			for (Field f : outputInterface.getDeclaredFields()) {
+			for (Field f : outputInterface.getFields()) {
 				f.setAccessible(true);
 				V<?> tag;
 				try {
