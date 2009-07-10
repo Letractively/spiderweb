@@ -18,6 +18,7 @@ package com.medallia.spider.test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -148,17 +149,17 @@ public abstract class StRenderTestCase<X extends StRenderable> extends TestCaseW
 	protected HttpServletResponse createResponse(final HttpServletResponseResult responseResult) {
 		return new HttpServletResponseWrapper(nullProxyForInterface(HttpServletResponse.class)) {
 			@Override public void sendRedirect(String location) throws IOException {
-				responseResult.redirectLocation = location;
+				responseResult.setRedirectLocation(location);
 			}
 			@Override public ServletOutputStream getOutputStream() throws IOException {
 				return new ServletOutputStream() {
 					@Override public void write(int b) throws IOException {
-						responseResult.bytes.write(b);
+						responseResult.getOutputStream().write(b);
 					}
 				};
 			}
 			@Override public PrintWriter getWriter() throws IOException {
-				return new PrintWriter(responseResult.bytes);
+				return new PrintWriter(responseResult.getOutputStream());
 			}
 			@Override public String encodeURL(String s) { return s; }
 			@Override public String getCharacterEncoding() { return "utf8"; }
@@ -175,6 +176,16 @@ public abstract class StRenderTestCase<X extends StRenderable> extends TestCaseW
 	public class HttpServletResponseResult implements StRenderResult {
 		private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 		private String redirectLocation;
+		
+		/** Set the location redirected to */
+		public void setRedirectLocation(String redirectLocation) {
+			this.redirectLocation = redirectLocation;
+		}
+
+		/** Get an {@link OutputStream} the data can be written to */
+		public OutputStream getOutputStream() {
+			return bytes;
+		}
 		
 		@Override public boolean isRedirect() {
 			return getRedirect() != null;
