@@ -85,18 +85,45 @@ public abstract class StRenderTestCase<X extends StRenderable> extends TestCaseW
 		return action(renderableClass, Collections.<String, String>emptyMap());
 	}
 	
-	/** @return result of Action on the given instance; request parameters passed in the given map */
-	protected StRenderResult action(final Class<? extends X> renderableClass, final Map<String, String> params) throws Exception {
-		HttpServletRequest request = new HttpServletRequestWrapper(nullProxyForInterface(HttpServletRequest.class)) {
+	/**
+	 * Create a mock instance of {@link HttpSession} which is returned by the
+	 * default implementation of {@link #createRequest(Class, Map)} when a
+	 * session is requested. The default object has no functionality and all
+	 * methods return null.
+	 * 
+	 * @return mock instance of {@link HttpSession}
+	 */
+	protected HttpSession createSession() {
+		return nullProxyForInterface(HttpSession.class);
+	}
+
+	/**
+	 * Create a mock instance of {@link HttpServletRequest} which is passed to
+	 * the servlet. The default object has limited functionality (i.e., no
+	 * attribute storing) and calls {@link #createSession()} when a session is
+	 * needed. Subclasses can override this method to add functionality as needed.
+	 * 
+	 * @param renderableClass
+	 *            action class
+	 * @param params
+	 *            request parameters
+	 * @return mock instance of {@link HttpServletRequest}
+	 */
+	protected HttpServletRequest createRequest(final Class<? extends X> renderableClass, final Map<String, String> params) {
+		return new HttpServletRequestWrapper(nullProxyForInterface(HttpServletRequest.class)) {
+			private HttpSession session;
 			@Override public String getMethod() { return "GET"; }
-			@Override public String getRequestURI() {
-				return uriForTask(renderableClass);
-			}
+			@Override public String getRequestURI() { return uriForTask(renderableClass); }
 			@Override public String getContextPath() { return ""; }
 			@Override public Map getParameterMap() { return params; }
 			@Override public Cookie[] getCookies() { return new Cookie[0]; }
-			@Override public HttpSession getSession() { return nullProxyForInterface(HttpSession.class); }
-			@Override public HttpSession getSession(boolean create) { return getSession(); }
+			@Override public HttpSession getSession() { return getSession(true); }
+			@Override public HttpSession getSession(boolean create) { 
+				if (session == null && create) {
+					session = createSession();
+				}
+				return session;
+			}
 			@Override public Object getAttribute(String name) { return null; }
 			@Override public Enumeration getAttributeNames() { return Collections.enumeration(Collections.emptySet()); }
 			@Override public String getHeader(String name) {
@@ -105,41 +132,73 @@ public abstract class StRenderTestCase<X extends StRenderable> extends TestCaseW
 				return super.getHeader(name);
 			}
 		};
-		
-		final ByteArrayOutputStream w = new ByteArrayOutputStream();
-		final String[] redirect = new String[1];
-		
-		HttpServletResponse response = new HttpServletResponseWrapper(nullProxyForInterface(HttpServletResponse.class)) {
+	}
+	
+	/**
+	 * Create a mock instance of {@link HttpServletResponse} which is passed to
+	 * the servlet. The default object has limited functionality (i.e., no
+	 * cookie storing). Subclasses can override this method to add functionality as
+	 * needed.
+	 * 
+	 * @param responseResult
+	 *            object where the results of actions on the
+	 *            {@link HttpServletResponse} will be stored.
+	 * @return mock instance of {@link HttpServletResponse}
+	 */
+	protected HttpServletResponse createResponse(final HttpServletResponseResult responseResult) {
+		return new HttpServletResponseWrapper(nullProxyForInterface(HttpServletResponse.class)) {
 			@Override public void sendRedirect(String location) throws IOException {
-				redirect[0] = location;
+				responseResult.redirectLocation = location;
 			}
 			@Override public ServletOutputStream getOutputStream() throws IOException {
 				return new ServletOutputStream() {
 					@Override public void write(int b) throws IOException {
-						w.write(b);
+						responseResult.bytes.write(b);
 					}
 				};
 			}
 			@Override public PrintWriter getWriter() throws IOException {
-				return new PrintWriter(w);
+				return new PrintWriter(responseResult.bytes);
 			}
 			@Override public String encodeURL(String s) { return s; }
 			@Override public String getCharacterEncoding() { return "utf8"; }
 			@Override public boolean isCommitted() { return false; }
 		};
+	}
+	
+	/**
+	 * Implementation of {@link StRenderResult}; can be passed to
+	 * {@link #createResponse(HttpServletResponseResult)} to obtain an instance
+	 * of {@link HttpServletResponse}; actions taken on the
+	 * {@link HttpServletResponse} object will be reflected in this object.
+	 */
+	public class HttpServletResponseResult implements StRenderResult {
+		private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		private String redirectLocation;
 		
-		servletMock.service(request, response);
+		@Override public boolean isRedirect() {
+			return getRedirect() != null;
+		}
 		
-		return new StRenderResult() {
-			public boolean isRedirect() { return getRedirect() != null; }
-			public String getRedirect() { return redirect[0]; }
-			public String getStContent() {
-				return Encoding.fromUTF8Bytes(getBinaryContent());
-			}
-			public byte[] getBinaryContent() {
-				return w.toByteArray();
-			}
-		};
+		@Override public String getRedirect() {
+			return redirectLocation;
+		}
+		
+		@Override public String getStContent() {
+			return Encoding.fromUTF8Bytes(getBinaryContent());
+		}
+		
+		@Override public byte[] getBinaryContent() {
+			return bytes.toByteArray();
+		}
+	}
+	
+	/** @return result of Action on the given instance; request parameters can be passed in the given map */
+	protected StRenderResult action(final Class<? extends X> renderableClass, final Map<String, String> params) throws Exception {
+		HttpServletRequest request = createRequest(renderableClass, params);
+		HttpServletResponseResult responseResult = new HttpServletResponseResult();
+		servletMock.service(request, createResponse(responseResult));
+		return responseResult;
 	}
 	
 	/** @return a {@link Proxy} implementation of the given interface where all methods return null */
