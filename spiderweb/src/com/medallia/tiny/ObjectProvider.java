@@ -87,9 +87,11 @@ public class ObjectProvider {
 		return register(c, c.cast(o));
 	}
 	/**
-	 * Registers o for o.getClass().
+	 * Registers o for o.getClass(). Does not register the object if it is null.
+	 * @return this ObjectProvider
 	 */
 	public ObjectProvider register(Object o) {
+		if (o == null) return this;
 		if (o instanceof Proxy) {
 			for (Class<?> c : o.getClass().getInterfaces())
 				castAndRegister(c, o);
