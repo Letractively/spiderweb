@@ -39,6 +39,7 @@ import javax.servlet.http.HttpSession;
 
 import com.medallia.spider.api.StRenderable;
 import com.medallia.tiny.Encoding;
+import com.medallia.tiny.Implement;
 import com.medallia.tiny.Strings;
 import com.medallia.tiny.test.TestCaseWithFixtures;
 
@@ -187,19 +188,19 @@ public abstract class StRenderTestCase<X extends StRenderable> extends TestCaseW
 			return bytes;
 		}
 		
-		@Override public boolean isRedirect() {
+		@Implement public boolean isRedirect() {
 			return getRedirect() != null;
 		}
 		
-		@Override public String getRedirect() {
+		@Implement public String getRedirect() {
 			return redirectLocation;
 		}
 		
-		@Override public String getStContent() {
+		@Implement public String getStContent() {
 			return Encoding.fromUTF8Bytes(getBinaryContent());
 		}
 		
-		@Override public byte[] getBinaryContent() {
+		@Implement public byte[] getBinaryContent() {
 			return bytes.toByteArray();
 		}
 	}
