@@ -307,14 +307,12 @@ public abstract class StRenderer {
 		}
 
 		ST_MISSING_ATTRS_TL.set(ctx);
-		setStTemplatePathTl();
 		try {
 			String stContent = renderFinal(st);
 			if (!ctx.missingAttrs.isEmpty()) throw new MissingAttributesException(ctx.missingAttrs, st);
 			
 			return stContent;
 		} finally {
-			releaseStTemplatePathTl();
 			ST_MISSING_ATTRS_TL.remove();
 		}
 	}
@@ -335,7 +333,12 @@ public abstract class StRenderer {
 
 	/** actual perform the rendering of the given StringTemplate by calling {@link StringTemplate#toString()} */
 	protected String renderFinal(StringTemplate st) {
-		return st.toString();
+		setStTemplatePathTl();
+		try {
+			return st.toString();
+		} finally {
+			releaseStTemplatePathTl();
+		}
 	}
 	
 	/** @return the relative path to the .st files; by default this is a package called "pages" */
