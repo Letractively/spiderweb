@@ -108,7 +108,11 @@ public class DynamicInputImpl implements DynamicInput {
 				if (e.name().toLowerCase().equals(vlow)) return e;
 			}
 			throw new AssertionError("Enum constant not found: " + v);
-		} else if (rt == Integer.class || rt == Integer.TYPE) {
+		} else if (rt == Integer.class) {
+			// map blank strings to null
+			return Strings.hasContent(v) ? Integer.valueOf(v) : null;
+		} else if (rt == Integer.TYPE) {
+			// primitive int must have a value
 			return Integer.valueOf(v);
 		} else if (rt == String.class) {
 			return v;
