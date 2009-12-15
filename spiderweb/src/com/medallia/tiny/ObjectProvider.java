@@ -171,7 +171,6 @@ public class ObjectProvider {
 		for (Map.Entry<Class<?>, Object> e : map.entrySet()) {
 			if (c.isAssignableFrom(e.getKey())) {
 				Object v = toValue(e.getValue());
-				LOG.debug("Returning "  + v + " with key " + e.getKey() + " for " + c);
 				return (X) v;
 			}
 		}
