@@ -21,6 +21,7 @@ import java.util.HashMap;
 import org.antlr.stringtemplate.AttributeRenderer;
 import org.antlr.stringtemplate.StringTemplate;
 import org.antlr.stringtemplate.StringTemplateErrorListener;
+import org.antlr.stringtemplate.StringTemplateGroup;
 import org.antlr.stringtemplate.language.DefaultTemplateLexer;
 import org.apache.commons.lang.StringEscapeUtils;
 
@@ -33,6 +34,8 @@ import com.medallia.tiny.Implement;
  * @author kristian
  */
 public class StringTemplateBuilder {
+	
+	private static final StringTemplateGroup DEFAULT_GROUP = new StringTemplateGroup("defaultGroup", DefaultTemplateLexer.class);
 
 	private final HashMap<String, Object> attr = Empty.hashMap();
 	private boolean escapeHtml;
@@ -74,7 +77,7 @@ public class StringTemplateBuilder {
 	public StringTemplate go(String template) {
 		StringTemplate st;
 		if (symbolNotFoundListener != null) {
-			st = new StringTemplate(template, DefaultTemplateLexer.class) {
+			st = new StringTemplate() {
 				@Override public Object get(StringTemplate self, String attribute) {
 					Object o = super.get(self, attribute);
 					if (self == this && o == null) {
@@ -84,7 +87,7 @@ public class StringTemplateBuilder {
 				}			
 			};
 		} else {
-			st = new StringTemplate(template, DefaultTemplateLexer.class);
+			st = new StringTemplate();
 		}
 		st.setAttributes(attr);
 		st.setErrorListener(ExplodingStringTemplateErrorListener.LISTENER);
@@ -95,6 +98,9 @@ public class StringTemplateBuilder {
 				}
 			});
 		}
+		st.setGroup(DEFAULT_GROUP);
+		// The template must be set AFTER the error listener
+		st.setTemplate(template);
 		return st;
 	}
 	
