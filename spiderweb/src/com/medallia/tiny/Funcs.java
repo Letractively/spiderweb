@@ -16,6 +16,7 @@
  */
 package com.medallia.tiny;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -38,16 +39,45 @@ public class Funcs {
 		 for (int i=0; i<as.length; i++) bs[i] = func.call(as[i]);
 		 return bs;
 	}
-	/** Copy the list, passing each element through the function represented by this object. */
+	
+	/** @return a list with each element of the given iterable passed through the given function. */
 	public static <A,B> List<B> map(Iterable<? extends A> as, Func<A,B> func) {
-		 List<B> bs = Empty.list();
-		 for (A a : as) bs.add(func.call(a));
-		 return bs;
+		 return map(Empty.<B>list(), as, func);
+	}
+	
+	/**
+	 * @return a list with each element of the given collection passed through
+	 *         the given function. This method uses {@link Collection#size()} to
+	 *         allocate the list ahead of time to avoid resizing operations.
+	 */
+	public static <A,B> List<B> map(Collection<? extends A> as, Func<A,B> func) {
+		 return map(Empty.<B>list(as.size()), as, func);
+	}
+	
+	private static <B, A> List<B> map(List<B> bs, Iterable<? extends A> as, Func<A, B> func) {
+		for (A a : as)
+			bs.add(func.call(a));
+		return bs;
 	}
 
-	/** @return a map with the values obtained from the iterator as values and the keys from the given function */
+	/**
+	 * @return a map with the values obtained from the iterator as values and the
+	 *         keys from the given function.
+	 */
 	public static <K, V> Map<K, V> buildMap(Iterable<? extends V> it, Func<V, K> func) {
-		Map<K, V> m = Empty.hashMap();
+		return buildMap(Empty.<K, V>hashMap(), it, func);
+	}
+	
+	/**
+	 * @return a map with the values obtained from the iterator as values and the
+	 *         keys from the given function. The iteration order of the map is
+	 *         the same as the given iterable.
+	 */
+	public static <K, V> Map<K, V> buildOrderedMap(Iterable<? extends V> it, Func<V, K> func) {
+		return buildMap(Empty.<K, V>linkedHashMap(), it, func);
+	}
+	
+	private static <K, V> Map<K, V> buildMap(Map<K, V> m, Iterable<? extends V> it, Func<V, K> func) {
 		for (V v : it)
 			m.put(func.call(v), v);
 		return m;
