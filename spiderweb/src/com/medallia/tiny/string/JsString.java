@@ -110,6 +110,7 @@ public class JsString extends StringBase {
 	}
 	/** @return JsString representation of the given argument */
 	private static JsString forObject(Object o, String mapSeparator) {
+		if (o instanceof JsString) return ((JsString)o);
 		if (o instanceof Map) return forMap((Map)o, mapSeparator);
 		if (o instanceof Collection) return forArray((Collection)o);
 		if (o instanceof Number) return forNumber((Number)o);
