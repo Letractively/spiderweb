@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.antlr.stringtemplate.AttributeRenderer;
+import org.apache.commons.lang.StringEscapeUtils;
 
 import com.medallia.tiny.Empty;
 import com.medallia.tiny.Encoding;
@@ -38,7 +39,7 @@ public class JsString extends StringBase {
 			return ((JsString)o).inScript().asString();
 		}
 	};
-	
+
 	private JsString(String s) {
 		super(s);
 	}
@@ -60,13 +61,13 @@ public class JsString extends StringBase {
 	}
 	/** @return JsString representation of the given argument */
 	public static JsString forNumber(Number n) {
-		return new JsString(n.toString());		
+		return new JsString(n.toString());
 	}
 	/** @return JsString representation of the given argument */
 	public static JsString forBoolean(Boolean b) {
 		return new JsString(b.toString());
 	}
-	
+
 	/** @return JsString representation of the given argument */
 	public static JsString forIntArray(Collection<Integer> c) {
 		StringBuilder sb = new StringBuilder("[");
@@ -122,25 +123,14 @@ public class JsString extends StringBase {
 			new RuntimeException("null string in js escape");
 			return "***THIS STRING WAS NULL***";
 		}
-		StringBuilder sb = new StringBuilder("'");
-		for (int i = 0; i < s.length(); i++) {
-			char c = s.charAt(i);
-			if (c >= 128 || !HtmlString.safeForHtml[c]) {
-				if (c<256)
-					sb.append(String.format("\\%03o", Integer.valueOf(c))); // see note below
-				else
-					sb.append(String.format("\\u%04x", Integer.valueOf(c)));
-			} else sb.append(c);
-		}
-		sb.append("'");
-		return sb.toString();
-	}	
+		return "'" + StringEscapeUtils.escapeJavaScript(s) + "'";
+	}
 	// manual boxing of printf parameters above to avoid compiler bug ('unnecessary cast' warning that can't be disabled)
 
 	@Implement public JsString subSequence(int arg0, int arg1) {
 		return new JsString(s.substring(arg0,arg1));
 	}
-	
+
 	public String asString() {
 		return s;
 	}
