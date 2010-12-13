@@ -112,7 +112,7 @@ public interface StRenderable {
 	/** Object used to dynamically retrieve input variables; this is needed for dynamically
 	 * generated forms where the number of input elements is not known at compile time.
 	 */
-	interface DynamicInput {
+	public interface DynamicInput {
 		/**
 		 * Dynamic version of the methods declared in {@link Input}.
 		 * 

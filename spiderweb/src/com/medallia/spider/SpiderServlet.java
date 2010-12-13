@@ -35,6 +35,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.antlr.stringtemplate.AutoIndentWriter;
 import org.antlr.stringtemplate.StringTemplate;
@@ -215,6 +216,7 @@ public abstract class SpiderServlet extends HttpServlet {
 		};
 		pageStGroup.setErrorListener(ExplodingStringTemplateErrorListener.LISTENER);
 		StRenderer.registerWebRenderers(pageStGroup);
+		registerStRenderers(pageStGroup);
 		
 		stringTemplateFactory = StRenderer.makeStringTemplateFactory(ExplodingStringTemplateErrorListener.LISTENER, new StToolProvider() {
 			@Implement public StTool getStTool(String name) {
@@ -225,6 +227,9 @@ public abstract class SpiderServlet extends HttpServlet {
 		if (debugMode == null)
 			setDebugMode(true); // true by default if not set
 	}
+
+	/** Hook which can be used to call {@link StringTemplateGroup#registerRenderer(Class, Object)} */
+	protected void registerStRenderers(StringTemplateGroup pageStGroup) { }
 
 	/**
 	 * @return the servlet class; usually this is {@link #getClass()}, but if that
@@ -260,6 +265,9 @@ public abstract class SpiderServlet extends HttpServlet {
 		
 		/** Remove the cookie with the given name */
 		void removeCookieValue(String name);
+		
+		/** @return the {@link HttpSession} for the request */
+		HttpSession getSession();
 	}
 
 	/** Register the objects that should be available for dependency injection. The
@@ -396,7 +404,7 @@ public abstract class SpiderServlet extends HttpServlet {
 		return req.getRequestURI().substring(req.getContextPath().length());
 	}
 
-	private RequestHandler makeRequest(HttpServletRequest req, final HttpServletResponse response) {
+	private RequestHandler makeRequest(final HttpServletRequest req, final HttpServletResponse response) {
 		final Map<String, String> m = Empty.hashMap();
 		Cookie[] cookies = req.getCookies();
 		if (cookies != null) {
@@ -430,6 +438,9 @@ public abstract class SpiderServlet extends HttpServlet {
 			}
 			private Cookie makeCookie(String name, String value) {
 				return new Cookie(name, value);
+			}
+			@Implement public HttpSession getSession() {
+				return req.getSession(true);
 			}
 		};
 	}

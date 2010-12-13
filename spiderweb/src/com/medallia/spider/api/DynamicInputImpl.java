@@ -114,6 +114,12 @@ public class DynamicInputImpl implements DynamicInput {
 		} else if (rt == Integer.TYPE) {
 			// primitive int must have a value
 			return Integer.valueOf(v);
+		} else if (rt == Long.class) {
+			// map blank strings to null
+			return Strings.hasContent(v) ? Long.valueOf(v) : null;
+		} else if (rt == Long.TYPE) {
+			// primitive long must have a value
+			return Long.valueOf(v);
 		} else if (rt == Double.class) {
 			// map blank strings to null
 			return Strings.hasContent(v) ? Double.valueOf(v) : null;
