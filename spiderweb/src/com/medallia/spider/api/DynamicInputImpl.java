@@ -16,42 +16,92 @@
  */
 package com.medallia.spider.api;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
+import java.util.Collections;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.fileupload.FileItemIterator;
+import org.apache.commons.fileupload.FileItemStream;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload.util.Streams;
+
+import com.medallia.spider.IOHelpers;
 import com.medallia.spider.api.StRenderable.DynamicInput;
 import com.medallia.spider.api.StRenderable.Input;
+import com.medallia.spider.api.StRenderer.InputArgHandler;
 import com.medallia.spider.api.StRenderer.InputArgParser;
+import com.medallia.tiny.Empty;
 import com.medallia.tiny.Implement;
 import com.medallia.tiny.Strings;
 
 /** Implementation of {@link DynamicInput} that is also used to parse the
  * values for the static input variables.
  */
-public class DynamicInputImpl implements DynamicInput {
+public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 
 	private final Map<String, String[]> inputParams;
-	private final Map<Class<?>, InputArgParser<?>> inputArgParsers;
+	private final Map<String, byte[]> fileUploads;
+	
+	private final Map<Class<?>, InputArgParser<?>> inputArgParsers = Empty.hashMap();
 
 	/**
-	 * @param inputParams the raw input values
-	 * @param inputArgParsers any registered {@link InputArgParser} objects
+	 * @param the request from which to read the request parameters
 	 */
-	public DynamicInputImpl(Map<String, String[]> inputParams, Map<Class<?>, InputArgParser<?>> inputArgParsers) {
-		this.inputParams = inputParams;
-		this.inputArgParsers = inputArgParsers;
+	public DynamicInputImpl(HttpServletRequest request) {
+		if (ServletFileUpload.isMultipartContent(request)) {
+			this.inputParams = Empty.hashMap();
+			this.fileUploads = Empty.hashMap();
+
+			ServletFileUpload upload = new ServletFileUpload();
+			try {
+				FileItemIterator iter = upload.getItemIterator(request);
+				while (iter.hasNext()) {
+					FileItemStream item = iter.next();
+					String fieldName = item.getFieldName();
+					InputStream stream = item.openStream();
+					if (item.isFormField()) {
+						inputParams.put(fieldName, new String[] { Streams.asString(stream) });
+					} else {
+						fileUploads.put(fieldName, IOHelpers.toByteArray(stream));
+					}
+				}
+			} catch (IOException e) {
+				throw new IllegalArgumentException("Failed to parse multipart", e);
+			} catch (FileUploadException e) {
+				throw new IllegalArgumentException("Failed to parse multipart", e);
+			}
+		} else {
+			@SuppressWarnings("unchecked")
+			Map<String, String[]> reqParams = request.getParameterMap();
+			this.inputParams = reqParams;
+			this.fileUploads = Collections.emptyMap();
+		}
+	}
+	
+	@Implement public <X> void registerArgParser(Class<X> type, InputArgParser<X> parser) {
+		inputArgParsers.put(type, parser);
 	}
 
 	@Implement public <X> X getInput(String name, Class<X> type) {
 		return getInput(name, type, emptyAnnotatedElement);
 	}
-
+	
 	/**
 	 * Method used for parse values for the methods declared in {@link Input}.
 	 */
 	public <X> X getInput(String name, Class<X> type, AnnotatedElement anno) {
+		// Special case for file uploads
+		if (type.isArray() && type.getComponentType() == Byte.TYPE) {
+			return type.cast(fileUploads.get(name));
+		}
+		
 		if (type.isArray() && anno.isAnnotationPresent(Input.MultiValued.class)) {
 			// return type is an array; grab all
 			Object o = inputParams.get(name);

@@ -1,5 +1,6 @@
 package com.medallia.spider;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -42,6 +43,15 @@ public class IOHelpers {
 			count += n;
 		}
 		return count;
+	}
+
+	/**
+	 * Read the bytes from the given stream into a byte array.
+	 */
+	public static byte[] toByteArray(InputStream input) throws IOException {
+		ByteArrayOutputStream output = new ByteArrayOutputStream();
+		copy(input, output);
+		return output.toByteArray();
 	}
 
 }

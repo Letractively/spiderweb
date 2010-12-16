@@ -48,10 +48,12 @@ import com.medallia.spider.MethodInvoker.LifecycleHandlerSet;
 import com.medallia.spider.StaticResources.StaticResource;
 import com.medallia.spider.StaticResources.StaticResourceLookup;
 import com.medallia.spider.Task.CustomPostAction;
+import com.medallia.spider.api.DynamicInputImpl;
 import com.medallia.spider.api.StRenderable;
 import com.medallia.spider.api.StRenderer;
+import com.medallia.spider.api.StRenderable.DynamicInput;
 import com.medallia.spider.api.StRenderable.PostAction;
-import com.medallia.spider.api.StRenderer.InputArgParser;
+import com.medallia.spider.api.StRenderer.InputArgHandler;
 import com.medallia.spider.api.StRenderer.StRenderPostAction;
 import com.medallia.spider.api.StRenderer.StToolProvider;
 import com.medallia.spider.api.StRenderer.StringTemplateFactory;
@@ -122,7 +124,7 @@ import com.medallia.tiny.web.HttpHeaders;
  * application. This code tends to either be duplicated or at the very least need a method call for each
  * request parameter to convert it into the right data type. Spider handles this via a proxy interface
  * which is dependency injected: see {@link spider.api.StRenderable.Input}. Custom parsers can be
- * registered by overriding @{link {@link #registerInputArgParser(StRenderer)}}.
+ * registered by overriding @{link {@link #registerInputArgParser(InputArgHandler)}.
  * <p>
  * 
  * <b> Dependency injection <br>
@@ -250,7 +252,7 @@ public abstract class SpiderServlet extends HttpServlet {
 	protected abstract String getDefaultURI();
 	
 	/** Object that allows interaction with the request */
-	public interface RequestHandler {
+	public interface RequestHandler extends DynamicInput {
 		/** @return the value stored for the cookie with the given name */
 		String getCookieValue(String name);
 		
@@ -277,11 +279,8 @@ public abstract class SpiderServlet extends HttpServlet {
 	
 	protected <X> void registerLifecycleHandlers(LifecycleHandlerSet hs, RequestHandler request) { }
 
-	/** Register any custom request parameter parsers. The method
-	 * {@link StRenderer#registerArgParser(Class, InputArgParser)
-	 * should be used for this.
-	 */
-	protected void registerInputArgParser(StRenderer renderer) { }
+	/** Register any custom request parameter parsers */
+	protected void registerInputArgParser(InputArgHandler inputArgHandler) { }
 	
 	private Boolean debugMode;
 
@@ -381,7 +380,11 @@ public abstract class SpiderServlet extends HttpServlet {
 		if (serveStatic(uri, res)) return;
 		log.info("Serving URI: " + uri + (debugMode ? " [debug mode]" : ""));
 		
-		RequestHandler request = makeRequest(req, res);
+		// Parse request parameters
+		DynamicInputImpl dynamicInput = new DynamicInputImpl(req);
+		registerInputArgParser(dynamicInput);
+		
+		RequestHandler request = makeRequest(req, res, dynamicInput);
 		ITask t = findTask(uri, request);
 		if (t == null) {
 			log.info("No task found, sending to default URI");
@@ -389,14 +392,11 @@ public abstract class SpiderServlet extends HttpServlet {
 			return;
 		}
 		
-		@SuppressWarnings("unchecked")
-		Map<String, String[]> reqParams = req.getParameterMap();
-		
 		List<EmbeddedContent> embeddedContent = Empty.list();
 		for (EmbeddedRenderTask ert : t.dependsOn())
-			renderEmbedded(ert, reqParams, request, embeddedContent);
+			renderEmbedded(ert, dynamicInput, request, embeddedContent);
 
-		renderFinal(t, req, reqParams, request, embeddedContent, res);
+		renderFinal(t, req, dynamicInput, request, embeddedContent, res);
 	}
 
 	/** @return the URI requested by the given HttpServletRequest */
@@ -404,7 +404,7 @@ public abstract class SpiderServlet extends HttpServlet {
 		return req.getRequestURI().substring(req.getContextPath().length());
 	}
 
-	private RequestHandler makeRequest(final HttpServletRequest req, final HttpServletResponse response) {
+	private RequestHandler makeRequest(final HttpServletRequest req, final HttpServletResponse response, final DynamicInputImpl dynamicInput) {
 		final Map<String, String> m = Empty.hashMap();
 		Cookie[] cookies = req.getCookies();
 		if (cookies != null) {
@@ -442,6 +442,9 @@ public abstract class SpiderServlet extends HttpServlet {
 			@Implement public HttpSession getSession() {
 				return req.getSession(true);
 			}
+			@Implement public <X> X getInput(String name, Class<X> type) {
+				return dynamicInput.getInput(name, type);
+			}
 		};
 	}
 
@@ -450,11 +453,11 @@ public abstract class SpiderServlet extends HttpServlet {
 	}
 
 	/** render the given embedded task (recursively) */
-	private void renderEmbedded(EmbeddedRenderTask t, Map<String, String[]> reqParams, RequestHandler request, List<EmbeddedContent> embeddedContent) {
+	private void renderEmbedded(EmbeddedRenderTask t, DynamicInputImpl dynamicInput, RequestHandler request, List<EmbeddedContent> embeddedContent) {
 		for (EmbeddedRenderTask ert : t.dependsOn())
-			renderEmbedded(ert, reqParams, request, embeddedContent);
+			renderEmbedded(ert, dynamicInput, request, embeddedContent);
 
-		PostAction po = render(t, reqParams, request, null, "embedded/");
+		PostAction po = render(t, dynamicInput, request, null, "embedded/");
 		if (po instanceof StRenderPostAction)
 			embeddedContent.add(new EmbeddedContent(t, (StRenderPostAction) po));
 		else
@@ -572,8 +575,8 @@ public abstract class SpiderServlet extends HttpServlet {
 	}
 	
 	/** render the given task and write the output to the response */
-	private void renderFinal(ITask t, HttpServletRequest req, Map<String, String[]> reqParams, RequestHandler request, List<EmbeddedContent> embeddedContent, HttpServletResponse res) throws IOException {
-		PostAction po = render(t, reqParams, request, embeddedContent, "pages/");
+	private void renderFinal(ITask t, HttpServletRequest req, DynamicInputImpl dynamicInput, RequestHandler request, List<EmbeddedContent> embeddedContent, HttpServletResponse res) throws IOException {
+		PostAction po = render(t, dynamicInput, request, embeddedContent, "pages/");
 		
 		if (po instanceof CustomPostAction) {
 			((CustomPostAction)po).respond(req, res);
@@ -617,7 +620,7 @@ public abstract class SpiderServlet extends HttpServlet {
 	private static final Pattern CLASS_NAME_PREFIX_PATTERN = Pattern.compile(".*\\.(.+)Task.*");
 
 	/** @return the PostAction returned from {@link StRenderer#actionAndRender(ObjectProvider, Map)} on the given task */
-	private PostAction render(ITask t, Map<String, String[]> reqParams, RequestHandler request, final List<EmbeddedContent> embeddedContent, final String relativeTemplatePath) {
+	private PostAction render(ITask t, DynamicInputImpl dynamicInput, RequestHandler request, final List<EmbeddedContent> embeddedContent, final String relativeTemplatePath) {
 		StRenderer renderer = new StRenderer(stringTemplateFactory, t) {
 			@Override protected Pattern getClassNamePrefixPattern() {
 				return CLASS_NAME_PREFIX_PATTERN;
@@ -631,12 +634,11 @@ public abstract class SpiderServlet extends HttpServlet {
 				return super.renderFinal(st);
 			}
 		};
-		registerInputArgParser(renderer);
 		
 		ObjectProvider injector = makeObjectProvider(request);
 
 		long nt = System.nanoTime();
-		PostAction po = renderer.actionAndRender(injector, makeLifecycleHandlerSet(request), reqParams);
+		PostAction po = renderer.actionAndRender(injector, makeLifecycleHandlerSet(request), dynamicInput);
 		log.info("StRender of " + t.getClass().getSimpleName() + " in " + TimeUnit.MILLISECONDS.convert(System.nanoTime() - nt, TimeUnit.NANOSECONDS) + " ms");
 		return po;
 	}

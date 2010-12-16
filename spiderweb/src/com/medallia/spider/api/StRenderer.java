@@ -106,12 +106,12 @@ public abstract class StRenderer {
 	 * Call the action method of the {@link StRenderable}, render the template if applicable and return the result.
 	 * 
 	 * @param injector dependency injector with the objects available for injection
-	 * @param inputParams the request parameters
+	 * @param dynamicInput provider for request input parameters
 	 * @return result of the action and render
 	 * @throws MissingAttributesException if the template referenced any attributes not set by the action method
 	 */
-	public PostAction actionAndRender(ObjectProvider injector, LifecycleHandlerSet hs, Map<String, String[]> inputParams) throws MissingAttributesException {
-		PostAction pa = invokeAction(injector, hs, inputParams);
+	public PostAction actionAndRender(ObjectProvider injector, LifecycleHandlerSet hs, DynamicInputImpl dynamicInput) throws MissingAttributesException {
+		PostAction pa = invokeAction(injector, hs, dynamicInput);
 		return pa == null ? defaultPostAction() : render(pa);
 	}
 	
@@ -173,8 +173,7 @@ public abstract class StRenderer {
 	 * @param inputParams the request parameters
 	 * @return result of the action and render
 	 */
-	public PostAction invokeAction(ObjectProvider injector, LifecycleHandlerSet hs, Map<String, String[]> inputParams) {
-		DynamicInputImpl dynamicInput = new DynamicInputImpl(inputParams, inputArgParsers);
+	public PostAction invokeAction(ObjectProvider injector, LifecycleHandlerSet hs, DynamicInputImpl dynamicInput) {
 		injector = injector.copyWith(dynamicInput).errorOnUnknownType();
 		
 		Method am = findActionMethod(renderable.getClass());
@@ -191,9 +190,13 @@ public abstract class StRenderer {
 		/** @return the parsed object */
 		X parse(String str);
 	}
-	
-	private final Map<Class<?>, InputArgParser<?>> inputArgParsers = Empty.hashMap();
 
+	/** Object with which {@link InputArgParser}s can be registered */
+	public interface InputArgHandler {
+		/** register the given {@link InputArgParser} */
+		<X> void registerArgParser(Class<X> type, InputArgParser<X> parser);
+	}
+	
 	private Object createInput(Class<?> x, final DynamicInputImpl dynamicInput) {
 		return Proxy.newProxyInstance(x.getClassLoader(), new Class<?>[] { x }, 
 			new InvocationHandler() {
@@ -204,11 +207,6 @@ public abstract class StRenderer {
 		);
 	}
 	
-	/** register the given {@link InputArgParser} */
-	public <X> void registerArgParser(Class<X> type, InputArgParser<X> parser) {
-		inputArgParsers.put(type, parser);
-	}
-
 	/** Exception thrown when a referenced StringTemplate attribute is not set */
 	public static class MissingAttributesException extends RuntimeException {
 		private final List<String> missingAttrs0;
