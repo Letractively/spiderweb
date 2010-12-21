@@ -31,6 +31,7 @@ import com.medallia.tiny.CollUtils;
 import com.medallia.tiny.Empty;
 import com.medallia.tiny.Encoding;
 import com.medallia.tiny.Implement;
+import com.medallia.tiny.web.HttpHeaders;
 
 /**
  * Abstract implementation of {@link ITask} that all tasks will normally
@@ -135,8 +136,19 @@ public abstract class Task implements ITask {
 		
 		/** write data to the given OutputStream */
 		protected abstract void writeTo(OutputStream out) throws IOException;
+
+		/**
+		 * @return true if the client browser should be instructed to cache the
+		 *         response for as long as possible; the default is false.
+		 */
+		protected boolean isCacheForever() { return false; }
 		
 		@Implement public void respond(HttpServletRequest req, HttpServletResponse res) throws IOException {
+			if (isCacheForever())
+				HttpHeaders.addCacheForeverHeaders(res);
+			else
+				HttpHeaders.addNoCacheHeaders(res);
+			
 			res.setContentType(getContentType());
 			writeTo(res.getOutputStream());
 		}
