@@ -38,6 +38,7 @@ import com.medallia.spider.api.StRenderable.Input;
 import com.medallia.spider.api.StRenderer.InputArgHandler;
 import com.medallia.spider.api.StRenderer.InputArgParser;
 import com.medallia.tiny.Empty;
+import com.medallia.tiny.Encoding;
 import com.medallia.tiny.Implement;
 import com.medallia.tiny.Strings;
 
@@ -67,7 +68,7 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 					String fieldName = item.getFieldName();
 					InputStream stream = item.openStream();
 					if (item.isFormField()) {
-						inputParams.put(fieldName, new String[] { Streams.asString(stream) });
+						inputParams.put(fieldName, new String[] { Streams.asString(stream, Encoding.CHARSET_UTF8_NAME) });
 					} else {
 						fileUploads.put(fieldName, IOHelpers.toByteArray(stream));
 					}

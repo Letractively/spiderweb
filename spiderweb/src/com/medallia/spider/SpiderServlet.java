@@ -62,6 +62,7 @@ import com.medallia.spider.sttools.StTool;
 import com.medallia.spider.test.RenderTaskTestCase;
 import com.medallia.tiny.Clock;
 import com.medallia.tiny.Empty;
+import com.medallia.tiny.Encoding;
 import com.medallia.tiny.Implement;
 import com.medallia.tiny.ObjectProvider;
 import com.medallia.tiny.Strings;
@@ -612,7 +613,7 @@ public abstract class SpiderServlet extends HttpServlet {
 	/** @return a Writer that writes UTF-8 to the given response */
 	protected Writer getUtf8Writer(HttpServletResponse res) throws IOException {
 		res.setContentType("text/html; charset=utf-8");
-		Writer w = new OutputStreamWriter(res.getOutputStream(), "utf-8");
+		Writer w = new OutputStreamWriter(res.getOutputStream(), Encoding.CHARSET_UTF8);
 		return w;
 	}
 
