@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.antlr.stringtemplate.AttributeRenderer;
-import org.apache.commons.lang.StringEscapeUtils;
 
 import com.medallia.tiny.Empty;
 import com.medallia.tiny.Encoding;
@@ -111,6 +110,7 @@ public class JsString extends StringBase {
 	}
 	/** @return JsString representation of the given argument */
 	private static JsString forObject(Object o, String mapSeparator) {
+		if (o == null) return raw("null");
 		if (o instanceof JsString) return ((JsString)o);
 		if (o instanceof Map) return forMap((Map)o, mapSeparator);
 		if (o instanceof Collection) return forArray((Collection)o);
@@ -118,15 +118,64 @@ public class JsString extends StringBase {
 		if (o instanceof Boolean) return forBoolean((Boolean)o);
 		return forString(String.valueOf(o));
 	}
-	private static String escapeStr(String s) {
-		if (s==null) {
+	private static String escapeStr(String string) {
+		if (string==null) {
 			new RuntimeException("null string in js escape");
 			return "***THIS STRING WAS NULL***";
 		}
-		return "'" + StringEscapeUtils.escapeJavaScript(s) + "'";
-	}
-	// manual boxing of printf parameters above to avoid compiler bug ('unnecessary cast' warning that can't be disabled)
+		if (string.isEmpty()) {
+			return "\"\"";
+		}
 
+		char b, c = 0;
+		int i, len = string.length();
+		StringBuilder sb = new StringBuilder(len + 16);
+		String t;
+
+		sb.append('"');
+		for (i = 0; i < len; i += 1) {
+			b = c;
+			c = string.charAt(i);
+			switch (c) {
+				case '\\':
+				case '"':
+					sb.append('\\');
+					sb.append(c);
+					break;
+				case '/':
+					if (b == '<') {
+						sb.append('\\');
+					}
+					sb.append(c);
+					break;
+				case '\b':
+					sb.append("\\b");
+					break;
+				case '\t':
+					sb.append("\\t");
+					break;
+				case '\n':
+					sb.append("\\n");
+					break;
+				case '\f':
+					sb.append("\\f");
+					break;
+				case '\r':
+					sb.append("\\r");
+					break;
+				default:
+					if (c < ' ' || (c >= '\u0080' && c < '\u00a0') || (c >= '\u2000' && c < '\u2100')) {
+						t = "000" + Integer.toHexString(c);
+						sb.append("\\u" + t.substring(t.length() - 4));
+					} else {
+						sb.append(c);
+					}
+			}
+		}
+		sb.append('"');
+		return sb.toString();
+	}
+	
 	@Implement public JsString subSequence(int arg0, int arg1) {
 		return new JsString(s.substring(arg0,arg1));
 	}
