@@ -138,9 +138,11 @@ public class MethodInvoker {
 	private List<BoundLifecycleHandler> findLifecycleHandlers(Object[] args) {
 		List<BoundLifecycleHandler> l = Empty.list();
 		for (Object o : args) {
-			LifecycleHandler<?> h = findHandler(o);
-			if (h != null)
-				l.add(bind(o, h));
+			if (o != null) {
+				LifecycleHandler<?> h = findHandler(o);
+				if (h != null)
+					l.add(bind(o, h));
+			}
 		}
 		return l;
 	}
