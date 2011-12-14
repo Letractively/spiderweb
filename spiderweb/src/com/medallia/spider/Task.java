@@ -27,10 +27,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.medallia.spider.api.StRenderable;
+import com.medallia.spider.api.StRenderer.StRenderPostAction;
 import com.medallia.tiny.CollUtils;
 import com.medallia.tiny.Empty;
 import com.medallia.tiny.Encoding;
 import com.medallia.tiny.Implement;
+import com.medallia.tiny.string.JsString;
 import com.medallia.tiny.web.HttpHeaders;
 
 /**
@@ -52,6 +54,15 @@ public abstract class Task implements ITask {
 			@Override protected String getContentType() { return "text/plain"; }
 			@Override protected void writeTo(OutputStream out) throws IOException {
 				out.write(Encoding.getUTF8Bytes(str));
+			}
+		};
+	}
+
+	/** @return a PostAction which sends the given object as json; see {@link JsString#forObject(Object)} */
+	public static PostAction json(final Object obj) {
+		return new StRenderPostAction() {
+			@Override public String getStContent() {
+				return JsString.forObject(obj).asString();
 			}
 		};
 	}
