@@ -250,7 +250,7 @@ public abstract class SpiderServlet extends HttpServlet {
 	 * @return the URI which a request is redirected to if it does not contain
 	 * a valid task name, e.g. 'foo' (assuming there is a FooTask).
 	 */
-	protected abstract String getDefaultURI();
+	protected abstract String getDefaultURI(RequestHandler request);
 	
 	/** Object that allows interaction with the request */
 	public interface RequestHandler extends DynamicInput {
@@ -269,8 +269,14 @@ public abstract class SpiderServlet extends HttpServlet {
 		/** Remove the cookie with the given name */
 		void removeCookieValue(String name);
 		
-		/** @return the {@link HttpSession} for the request */
-		HttpSession getSession();
+		/** @return the {@link HttpSession} for the request if it exists, otherwise null */
+		HttpSession getSessionOrNull();
+		
+		/** @return the {@link HttpSession} for the request, creating it if necessary */
+		HttpSession getOrCreateSession();
+		
+		/** @return true if the user has a session which was invalidated, false otherwise */
+		boolean invalidateSession();
 	}
 
 	/** Register the objects that should be available for dependency injection. The
@@ -374,22 +380,26 @@ public abstract class SpiderServlet extends HttpServlet {
 	/** Parse the URI and forward the request to the appropriate task */
 	protected void handleInternal(HttpServletRequest req, HttpServletResponse res) throws IOException {
 		String uri = getUriForRequest(req);
-		if (uri.length() == 0) {
-			res.sendRedirect("/" + getDefaultURI());
+		boolean uriEmpty = uri.isEmpty();
+		if (!uriEmpty && serveStatic(uri, res))
 			return;
-		}
-		if (serveStatic(uri, res)) return;
-		log.info("Serving URI: " + uri + (debugMode ? " [debug mode]" : ""));
 		
 		// Parse request parameters
 		DynamicInputImpl dynamicInput = new DynamicInputImpl(req);
 		registerInputArgParser(dynamicInput);
 		
 		RequestHandler request = makeRequest(req, res, dynamicInput);
+		if (uriEmpty) {
+			res.sendRedirect("/" + getDefaultURI(request));
+			return;
+		}
+		
+		log.info("Serving URI: " + uri + (debugMode ? " [debug mode]" : ""));
+		
 		ITask t = findTask(uri, request);
 		if (t == null) {
 			log.info("No task found, sending to default URI");
-			res.sendRedirect(getDefaultURI());
+			res.sendRedirect(getDefaultURI(request));
 			return;
 		}
 		
@@ -440,11 +450,21 @@ public abstract class SpiderServlet extends HttpServlet {
 			private Cookie makeCookie(String name, String value) {
 				return new Cookie(name, value);
 			}
-			@Implement public HttpSession getSession() {
+			@Implement public HttpSession getSessionOrNull() {
+				return req.getSession(false);
+			}
+			@Implement public HttpSession getOrCreateSession() {
 				return req.getSession(true);
 			}
 			@Implement public <X> X getInput(String name, Class<X> type) {
 				return dynamicInput.getInput(name, type);
+			}
+			@Implement public boolean invalidateSession() {
+				HttpSession session = getSessionOrNull();
+				if (session != null)
+					session.invalidate();
+				
+				return session != null;
 			}
 		};
 	}
