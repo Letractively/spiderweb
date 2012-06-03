@@ -24,6 +24,7 @@ import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,10 +49,12 @@ public class ObjectProvider {
 	private static final Log LOG = LogFactory.getLog(ObjectProvider.class);
 	private static final Object[] NO_ARUMENTS = new Object[0];
 	
-	private Object lastArg = NO_ARG;
 	protected final Map<Class<?>, Object> map;
 	private final Map<Class<?>, Object> annotationMap;
+
 	private boolean errorOnUnknownType;
+	private Object lastArg = NO_ARG;
+	
 	/**
 	 * Creates a new ObjectProvider with no registered objects
 	 */
@@ -64,6 +67,7 @@ public class ObjectProvider {
 	protected ObjectProvider(ObjectProvider from) { 
 		map = Empty.linkedHashMap(from.map);
 		annotationMap = Empty.linkedHashMap(from.annotationMap);
+		errorOnUnknownType = from.errorOnUnknownType;
 		lastArg = from.lastArg;
 	}
 	
@@ -71,11 +75,11 @@ public class ObjectProvider {
 	protected ObjectProvider copyObjectProvider() {
 		return new ObjectProvider(this);
 	}
-
+	
 	/** if called an exception will be thrown if an unknown object is requested instead of passing in null */
 	public ObjectProvider errorOnUnknownType() {
-		errorOnUnknownType = true;
-		return this;
+	        errorOnUnknownType = true;
+	        return this;
 	}
 
 	/**
@@ -163,7 +167,7 @@ public class ObjectProvider {
 	}
 	
 	/**
-	 * @return an object of type c, or null if none are registered with this ObjectProvider
+	 * @return an object of type c, or throw {@link IllegalArgumentException} if none are registered with this ObjectProvider
 	 */
 	@SuppressWarnings("unchecked")
 	public <X> X get(Class<X> c) {
@@ -174,13 +178,10 @@ public class ObjectProvider {
 				return (X) v;
 			}
 		}
-		String msg = "No object registred for " + c + " in " + this;
-		if (errorOnUnknownType) {
-			throw new RuntimeException(msg);
-		} else {
-			LOG.info(msg);
+		if (errorOnUnknownType)
+			throw new IllegalArgumentException("No object registred for " + c + " in " + this);
+		else
 			return null;
-		}
 	}
 	
 	private Object toValue(Object obj) {
@@ -225,20 +226,42 @@ public class ObjectProvider {
 		op.lastArg = o;
 		return op;
 	}
-
+	
+	/** Storage for the argument types and argument annotations for a {@link Method} or {@link Constructor} */
+	private static class Parameters {
+		final Class<?>[] pt;
+		final Annotation[][] a;
+		
+		private Parameters(Method m) {
+			this.pt = m.getParameterTypes();
+			this.a = m.getParameterAnnotations();
+		}
+		private Parameters(Constructor cons) {
+			this.pt = cons.getParameterTypes();
+			this.a = cons.getParameterAnnotations();
+		}
+	}
+	
+	/** Cache for {@link Parameters} since these are relatively expensive to obtain */
+	private static final ConcurrentMap<Object, Parameters> parametersMap = Empty.concurrentMap();
+	
 	/**
 	 * Creates a parameter list for invoking the method using object from this ObjectProvider.
 	 * Parameters are obtained by calling {@link #get(Class)} on the classes in m.getParameterTypes().
 	 * If a lastArg is specified for this ObjectProvider, the last argument will be that object.
 	 */
 	public Object[] makeArgsFor(Method m) {
-		Class<?>[] pt = m.getParameterTypes();
-		Annotation[][] a = m.getParameterAnnotations();
-		return makeArgsFor(pt, a);
+		Parameters p = parametersMap.get(m);
+		if (p == null)
+			parametersMap.put(m, p = new Parameters(m));
+		return makeArgsFor(p.pt, p.a);
 	}
 	/** Same as {@link #makeArgsFor(Method)}, but for a {@link Constructor} */
 	public Object[] makeArgsFor(Constructor cons) {
-		return makeArgsFor(cons.getParameterTypes(), cons.getParameterAnnotations());
+		Parameters p = parametersMap.get(cons);
+		if (p == null)
+			parametersMap.put(cons, p = new Parameters(cons));
+		return makeArgsFor(p.pt, p.a);
 	}
 
 	private Object[] makeArgsFor(Class<?>[] pt, Annotation[][] a) {
