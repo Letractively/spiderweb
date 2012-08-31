@@ -112,7 +112,7 @@ public abstract class StRenderTestCase<X extends StRenderable> extends TestCaseW
 	 * @return mock instance of {@link HttpServletRequest}
 	 */
 	protected HttpServletRequest createRequest(final Class<? extends X> renderableClass, final Map<String, String> params) {
-		return new HttpServletRequestWrapper(nullProxyForInterface(HttpServletRequest.class)) {
+		return customizeRequest(new HttpServletRequestWrapper(nullProxyForInterface(HttpServletRequest.class)) {
 			private HttpSession session;
 			@Override public String getMethod() { return "GET"; }
 			@Override public String getRequestURI() { return uriForTask(renderableClass); }
@@ -133,7 +133,14 @@ public abstract class StRenderTestCase<X extends StRenderable> extends TestCaseW
 					return "http://" + renderableClass.getName() + "-test";
 				return super.getHeader(name);
 			}
-		};
+		});
+	}
+	
+	/**
+	 * Override to provide customized request behavior. Use {@link HttpServletRequestWrapper} to achieve it.
+	 */
+	protected HttpServletRequest customizeRequest(HttpServletRequest request) {
+		return request;
 	}
 	
 	/**
