@@ -35,6 +35,7 @@ import org.apache.commons.fileupload.util.Streams;
 import com.medallia.spider.IOHelpers;
 import com.medallia.spider.api.StRenderable.DynamicInput;
 import com.medallia.spider.api.StRenderable.Input;
+import com.medallia.spider.api.StRenderable.UploadedFile;
 import com.medallia.spider.api.StRenderer.InputArgHandler;
 import com.medallia.spider.api.StRenderer.InputArgParser;
 import com.medallia.tiny.Empty;
@@ -48,7 +49,7 @@ import com.medallia.tiny.Strings;
 public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 
 	private final Map<String, String[]> inputParams;
-	private final Map<String, byte[]> fileUploads;
+	private final Map<String, UploadedFile> fileUploads;
 	
 	private final Map<Class<?>, InputArgParser<?>> inputArgParsers = Empty.hashMap();
 
@@ -70,7 +71,16 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 					if (item.isFormField()) {
 						inputParams.put(fieldName, new String[] { Streams.asString(stream, Encoding.CHARSET_UTF8_NAME) });
 					} else {
-						fileUploads.put(fieldName, IOHelpers.toByteArray(stream));
+						final String filename = item.getName();
+						final byte[] bytes = IOHelpers.toByteArray(stream);
+						fileUploads.put(fieldName, new UploadedFile() {
+							@Override public String getFilename() {
+								return filename;
+							}
+							@Override public byte[] getBytes() {
+								return bytes;
+							}
+						});
 					}
 				}
 			} catch (IOException e) {
@@ -99,8 +109,13 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 	 */
 	public <X> X getInput(String name, Class<X> type, AnnotatedElement anno) {
 		// Special case for file uploads
-		if (type.isArray() && type.getComponentType() == Byte.TYPE) {
+		if (type.isAssignableFrom(UploadedFile.class))
 			return type.cast(fileUploads.get(name));
+
+		// Also support just getting the bytes from a file without the name
+		if (type.isArray() && type.getComponentType() == Byte.TYPE) {
+			UploadedFile uploadedFile = fileUploads.get(name);
+			return uploadedFile != null ? type.cast(uploadedFile.getBytes()) : null;
 		}
 		
 		if (type.isArray() && anno.isAnnotationPresent(Input.MultiValued.class)) {

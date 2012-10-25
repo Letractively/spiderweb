@@ -123,6 +123,17 @@ public interface StRenderable {
 		<X> X getInput(String name, Class<X> type);
 	}
 	
+	/**
+	 * Object which represents an uploaded file. It it is also possible to declare a 'byte[]'
+	 * directly if just the data, not the filename, is of interest.
+	 * */
+	public interface UploadedFile {
+		/** @return the name of the uploaded file */
+		String getFilename();
+		/** @return the bytes in the uploaded file */
+		byte[] getBytes();
+	}
+	
 	/** TypeTag Interface to be used in the Output interface
 	 * @param <X> type of the tag
 	 */
