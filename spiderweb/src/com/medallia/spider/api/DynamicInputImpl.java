@@ -80,6 +80,9 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 							@Override public byte[] getBytes() {
 								return bytes;
 							}
+							@Override public int getSize() {
+								return bytes.length;
+							}
 						});
 					}
 				}

@@ -132,6 +132,8 @@ public interface StRenderable {
 		String getFilename();
 		/** @return the bytes in the uploaded file */
 		byte[] getBytes();
+		/** @return the size of the file, i.e. the length of {@link #getBytes()} */
+		int getSize();
 	}
 	
 	/** TypeTag Interface to be used in the Output interface
