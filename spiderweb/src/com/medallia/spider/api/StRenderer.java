@@ -48,6 +48,7 @@ import com.medallia.spider.api.StRenderable.V;
 import com.medallia.spider.sttools.StTool;
 import com.medallia.tiny.CollUtils;
 import com.medallia.tiny.Empty;
+import com.medallia.tiny.Encoding;
 import com.medallia.tiny.Implement;
 import com.medallia.tiny.ObjectProvider;
 import com.medallia.tiny.string.HtmlString;
@@ -420,6 +421,7 @@ public abstract class StRenderer {
 				};
 			}
 		};
+		stGroup.setFileCharEncoding(Encoding.CHARSET_UTF8_NAME);
 		stGroup.setErrorListener(errorListener);
 		registerWebRenderers(stGroup);
 		
