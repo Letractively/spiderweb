@@ -17,6 +17,8 @@
 package com.medallia.tiny.test;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import junit.framework.TestCase;
@@ -45,7 +47,7 @@ import com.medallia.tiny.Fixture;
  */
 public abstract class TestCaseWithFixtures extends TestCase {
 	
-	private List<Fixture> fixtures = Empty.list();
+	private List<Fixture> fixtures = Empty.list(getDefaultFixtures());
 	private Fixture.Chained combined;
 	
 	/** add the given fixtures to the list of fixtures that the test depends on */
@@ -57,7 +59,12 @@ public abstract class TestCaseWithFixtures extends TestCase {
 	protected void safeUp() throws Exception { }
 	/** code that should run after the test method completes */ 
 	protected void safeDown() throws Exception { }
-	
+
+	/** @return a default set of fixtures which should be run before any of the fixtures added with {@link #addFixture} */
+	protected Collection<? extends Fixture> getDefaultFixtures() {
+		return Collections.emptySet();
+	}
+
 	/** Add a fixture instead (or override safeUp if you must) */
 	@Override @Deprecated
 	protected final void setUp() throws Exception {
