@@ -22,7 +22,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -38,6 +40,7 @@ import com.medallia.spider.api.StRenderable.Input;
 import com.medallia.spider.api.StRenderable.UploadedFile;
 import com.medallia.spider.api.StRenderer.InputArgHandler;
 import com.medallia.spider.api.StRenderer.InputArgParser;
+import com.medallia.tiny.CollUtils;
 import com.medallia.tiny.Empty;
 import com.medallia.tiny.Encoding;
 import com.medallia.tiny.Implement;
@@ -58,8 +61,8 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 	 */
 	public DynamicInputImpl(HttpServletRequest request) {
 		if (ServletFileUpload.isMultipartContent(request)) {
-			this.inputParams = Empty.hashMap();
 			this.fileUploads = Empty.hashMap();
+			Map<String, List<String>> inputParamsWithList = Empty.hashMap();
 
 			ServletFileUpload upload = new ServletFileUpload();
 			try {
@@ -69,7 +72,7 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 					String fieldName = item.getFieldName();
 					InputStream stream = item.openStream();
 					if (item.isFormField()) {
-						inputParams.put(fieldName, new String[] { Streams.asString(stream, Encoding.CHARSET_UTF8_NAME) });
+						CollUtils.addToMapList(inputParamsWithList, fieldName, Streams.asString(stream, Encoding.CHARSET_UTF8_NAME));
 					} else {
 						final String filename = item.getName();
 						final byte[] bytes = IOHelpers.toByteArray(stream);
@@ -85,6 +88,10 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 							}
 						});
 					}
+				}
+				this.inputParams = Empty.hashMap();
+				for (Entry<String, List<String>> entry: inputParamsWithList.entrySet()) {
+					inputParams.put(entry.getKey(), entry.getValue().toArray(new String[0]));
 				}
 			} catch (IOException e) {
 				throw new IllegalArgumentException("Failed to parse multipart", e);
