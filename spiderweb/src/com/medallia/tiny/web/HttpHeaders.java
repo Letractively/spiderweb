@@ -39,9 +39,9 @@ public class HttpHeaders {
 	 */
 	public static void addNoCacheHeaders(HttpServletResponse response) {
 		assert !response.isCommitted() : "Cannot change committed response";
-		response.setHeader("Pragma", "no-cache");
+		response.setHeader("Pragma", "no-cache token");
 		response.setHeader("Expires", "Mon, 1 Jan 2007 08:00:00 GMT");
-		response.setHeader("Cache-Control", "no-cache, must-revalidate");
+		response.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0");
 	}
 
 }
