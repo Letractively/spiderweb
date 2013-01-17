@@ -29,7 +29,7 @@ public class DropdownElement {
 	
 
 	/** @return {@link DropdownElement} objects for the given list; the functions are used to obtain the value and text for each element */
-	public static <X> List<DropdownElement> fromList(List<X> l, final String selectedVar, final Func<X, String> valueFunc, final Func<X, String> textFunc) {
+	public static <X> List<DropdownElement> fromList(List<? extends X> l, final String selectedVar, final Func<? super X, String> valueFunc, final Func<? super X, String> textFunc) {
 		return Funcs.map(l, new Func<X, DropdownElement>() {
 			@Implement public DropdownElement call(X x) {
 				String value = valueFunc.call(x);
@@ -56,7 +56,7 @@ public class DropdownElement {
 	}
 	
 	/** @return {@link DropdownOptGroup} objects for the given map */
-	public static <X> List<DropdownOptGroup> fromMap(Map<?, List<X>> m, final X selectedItem, final Func<X, String> valueFunc, final Func<X, String> textFunc) {
+	public static <X> List<DropdownOptGroup> fromMap(Map<?, List<X>> m, final X selectedItem, final Func<? super X, String> valueFunc, final Func<? super X, String> textFunc) {
 		return Funcs.map(m.entrySet(), new Func<Map.Entry<?, List<X>>, DropdownOptGroup>() {
 			@Implement public DropdownOptGroup call(final Map.Entry<?, List<X>> me) {
 				return new DropdownOptGroup() {
