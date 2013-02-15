@@ -2,6 +2,7 @@ package com.medallia.spider;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +12,6 @@ import com.medallia.tiny.CollUtils;
 import com.medallia.tiny.Empty;
 import com.medallia.tiny.Implement;
 import com.medallia.tiny.ObjectProvider;
-import com.medallia.tiny.Rethrow;
 
 /**
  * Class that handles invoking a given method or constructor. An instance of
@@ -70,11 +70,11 @@ public class MethodInvoker {
 	public <X> X invoke(final Constructor<X> cons) {
 		final Object[] consArgs = injector.makeArgsFor(cons);
 		return invoke(consArgs, new Callable<X>(){
-			@Implement public X call() throws Exception {
+			@Implement public X call() throws ReflectiveOperationException {
 				try {
 					return cons.newInstance(consArgs);
-				} catch (Exception e) {
-					throw Rethrow.withComment(e, "While invoking constructor " + cons + " with " + Arrays.toString(consArgs));
+				} catch (ReflectiveOperationException e) {
+					throw comment(e, "While invoking constructor " + cons + " with " + Arrays.toString(consArgs));
 				}
 			}
 		});
@@ -86,11 +86,11 @@ public class MethodInvoker {
 	public Object invoke(final Method m, final Object obj) {
 		final Object[] args = injector.makeArgsFor(m);
 		return invoke(args, new Callable<Object>(){
-			@Implement public Object call() throws Exception {
+			@Implement public Object call() throws ReflectiveOperationException {
 				try {
 					return m.invoke(obj, args);
-				} catch (Exception e) {
-					throw Rethrow.withComment(e, "While invoking method " + m + " with " + Arrays.toString(args));
+				} catch (ReflectiveOperationException e) {
+					throw comment(e, "While invoking method " + m + " with " + Arrays.toString(args));
 				}
 			}
 		});
@@ -109,7 +109,7 @@ public class MethodInvoker {
 			return invoke(hl, args, c);
 		} catch (Exception e) {
 			// Work around Java's type system
-			throw Rethrow.uncheckedThrow(e);
+			throw uncheckedThrow(e);
 		}
 	}
 	
@@ -128,7 +128,7 @@ public class MethodInvoker {
 				} catch (Throwable nested) {
 					// ignore these
 				}
-				throw Rethrow.uncheckedThrow(t);
+				throw t;
 			}
 			h.onSuccess();
 			return x;
@@ -164,6 +164,32 @@ public class MethodInvoker {
 			@Implement public void onError(Throwable t) { h.onError(x, t); }
 			@Implement public void onSuccess() { h.onSuccess(x); }
 		};
+	}
+	
+	/** add a comment to an exception (without changing its type) */
+	public static <X extends Throwable> X comment(X e, String expl) {
+		// OOME is a singleton, so don't confuse things
+		if (e instanceof OutOfMemoryError) return e;
+	
+		List<StackTraceElement> l = new ArrayList<StackTraceElement>(Arrays.asList(e.getStackTrace()));
+		int pos = l.size() - Thread.currentThread().getStackTrace().length + 4;
+		if (pos < 0) pos = 0;
+		l.add(pos, new StackTraceElement("", expl + "  ", "note", 0));
+		e.setStackTrace(l.toArray(new StackTraceElement[0]));
+		return e;
+	}
+
+	/**
+	 * Rethrow the throwable, such that it will be unchecked
+	 * @return An Error for convenience. Will always throws an exception so the actual Error is never returned.  
+	 */
+	public static Error uncheckedThrow(Throwable o) {
+		throw MethodInvoker.<Error>uncheckedThrow0(o);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <X extends Throwable> Error uncheckedThrow0(Throwable o) throws X {
+		throw (X)o;
 	}
 
 }

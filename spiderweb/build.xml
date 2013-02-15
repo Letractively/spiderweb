@@ -18,7 +18,7 @@
   </target>
 
   <target name="compile" depends="init" description="compile the Java source code to class files">
-    <javac srcdir="${src}" destdir="${bin}" debug="true" deprecation="false" encoding="utf8" source="1.5" target="1.5">
+    <javac srcdir="${src}" destdir="${bin}" debug="true" deprecation="false" encoding="utf8" source="1.7" target="1.7">
       <classpath>
        <fileset dir="${classpath}">
            <include name="**/*.jar"/>
