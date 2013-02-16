@@ -1,6 +1,7 @@
 package com.medallia.spider;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,7 +75,7 @@ public class MethodInvoker {
 				try {
 					return cons.newInstance(consArgs);
 				} catch (ReflectiveOperationException e) {
-					throw comment(e, "While invoking constructor " + cons + " with " + Arrays.toString(consArgs));
+					throw uncheckedThrowWithComment(e, "While invoking constructor " + cons + " with " + Arrays.toString(consArgs));
 				}
 			}
 		});
@@ -90,7 +91,7 @@ public class MethodInvoker {
 				try {
 					return m.invoke(obj, args);
 				} catch (ReflectiveOperationException e) {
-					throw comment(e, "While invoking method " + m + " with " + Arrays.toString(args));
+					throw uncheckedThrowWithComment(e, "While invoking method " + m + " with " + Arrays.toString(args));
 				}
 			}
 		});
@@ -167,7 +168,7 @@ public class MethodInvoker {
 	}
 	
 	/** add a comment to an exception (without changing its type) */
-	public static <X extends Throwable> X comment(X e, String expl) {
+	private static <X extends Throwable> X comment(X e, String expl) {
 		// OOME is a singleton, so don't confuse things
 		if (e instanceof OutOfMemoryError) return e;
 	
@@ -178,12 +179,18 @@ public class MethodInvoker {
 		e.setStackTrace(l.toArray(new StackTraceElement[0]));
 		return e;
 	}
+	
+	private static Error uncheckedThrowWithComment(Throwable t, String expl) {
+		// Special case to extract target exception
+		if (t instanceof InvocationTargetException) {
+		        Throwable target = ((InvocationTargetException)t).getTargetException();
+		        if (target != null) t = target;
+		}
+		throw uncheckedThrow(comment(t, expl));
+		
+	}
 
-	/**
-	 * Rethrow the throwable, such that it will be unchecked
-	 * @return An Error for convenience. Will always throws an exception so the actual Error is never returned.  
-	 */
-	public static Error uncheckedThrow(Throwable o) {
+	private static Error uncheckedThrow(Throwable o) {
 		throw MethodInvoker.<Error>uncheckedThrow0(o);
 	}
 
