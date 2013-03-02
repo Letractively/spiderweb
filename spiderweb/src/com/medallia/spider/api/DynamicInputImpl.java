@@ -139,7 +139,7 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 		// boolean is used for checkboxes, and false is encoded as a missing value
 		if (type == Boolean.class || type == Boolean.TYPE) {
 			@SuppressWarnings("unchecked")
-			X x = (X) Boolean.valueOf(v != null);
+			X x = (X) Boolean.valueOf(v != null && !"false".equalsIgnoreCase(v));
 			return x;
 		}
 		
