@@ -146,10 +146,18 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 		// the remaining types have proper null values
 		if (v == null) return null;
 		
+		return cast(parseSingleValue(type, v, anno, inputArgParsers));
+	}
+	
+	/** @return the given value parsed as the given {@link Class} type */
+	public <X> X parsePrimitiveValue(String v, Class<X> type) {
+		return cast(parseSingleValue(type, v, null, null));
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <X> X cast(Object o) {
 		// Do not use Class.cast here since it does not work on primitive types
-		@SuppressWarnings("unchecked")
-		X x = (X) parseSingleValue(type, v, anno);
-		return x;
+		return (X) o;
 	}
 	
 	/**
@@ -172,12 +180,12 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 		Class<?> comp = rt.getComponentType();
 		Object arr = Array.newInstance(rt.getComponentType(), xs.length);
 		for (int i=0; i < xs.length; i++) {
-			Array.set(arr, i, parseSingleValue(comp, xs[i], anno));
+			Array.set(arr, i, parseSingleValue(comp, xs[i], anno, inputArgParsers));
 		}
 		return arr;
 	}
 
-	private Object parseSingleValue(Class<?> rt, String v, AnnotatedElement anno) throws AssertionError {
+	private static Object parseSingleValue(Class<?> rt, String v, AnnotatedElement anno, Map<Class<?>, InputArgParser<?>> inputArgParsers) {
 		if (rt.isEnum()) {
 			String vlow = v.toLowerCase();
 			for (Enum e : rt.asSubclass(Enum.class).getEnumConstants()) {
@@ -212,10 +220,10 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 			Class<?> arrayType = rt.getComponentType();
 			Object a = Array.newInstance(arrayType, strVals.length);
 			for (int i = 0; i < strVals.length; i++) {
-				Array.set(a, i, parseSingleValue(arrayType, strVals[i], anno));
+				Array.set(a, i, parseSingleValue(arrayType, strVals[i], anno, inputArgParsers));
 			}
 			return a;
-		} else {
+		} else if (inputArgParsers != null) {
 			InputArgParser<?> argParser = inputArgParsers.get(rt);
 			if (argParser != null) {
 				return argParser.parse(v);
