@@ -39,7 +39,6 @@ import javax.servlet.http.HttpSession;
 
 import com.medallia.spider.api.StRenderable;
 import com.medallia.tiny.Encoding;
-import com.medallia.tiny.Implement;
 import com.medallia.tiny.Strings;
 import com.medallia.tiny.test.TestCaseWithFixtures;
 
@@ -195,19 +194,23 @@ public abstract class StRenderTestCase<X extends StRenderable> extends TestCaseW
 			return bytes;
 		}
 		
-		@Implement public boolean isRedirect() {
+		@Override
+		public boolean isRedirect() {
 			return getRedirect() != null;
 		}
 		
-		@Implement public String getRedirect() {
+		@Override
+		public String getRedirect() {
 			return redirectLocation;
 		}
 		
-		@Implement public String getStContent() {
+		@Override
+		public String getStContent() {
 			return Encoding.fromUTF8Bytes(getBinaryContent());
 		}
 		
-		@Implement public byte[] getBinaryContent() {
+		@Override
+		public byte[] getBinaryContent() {
 			return bytes.toByteArray();
 		}
 	}
@@ -223,6 +226,7 @@ public abstract class StRenderTestCase<X extends StRenderable> extends TestCaseW
 	/** @return a {@link Proxy} implementation of the given interface where all methods return null */
 	public static <X> X nullProxyForInterface(Class<X> x) {
 		return x.cast(Proxy.newProxyInstance(x.getClassLoader(), new Class<?>[] { x }, new InvocationHandler() {
+			@Override
 			public Object invoke(Object arg0, Method arg1, Object[] arg2) throws Throwable {
 				return null;
 			}

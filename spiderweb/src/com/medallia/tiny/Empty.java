@@ -82,33 +82,4 @@ public final class Empty {
 
 	public static StringBuilder sb() { return new StringBuilder(); }
 
-	public static class MapBuilder<X,Y,Z extends Map<X,Y>> {
-		private final Z map;
-		public MapBuilder(Z map) { this.map = map; }
-		public MapBuilder<X,Y,Z> put(X x, Y y) { map.put(x,y); return this; }
-		public Z getMap() { return map; }
-	}
-	public static <X,Y> MapBuilder<X,Y,Map<X,Y>> buildMap(X x, Y y) {
-		return new MapBuilder<X,Y,Map<X,Y>>(new HashMap<X,Y>()).put(x,y);
-	}
-	
-	public static class ListBuilder<T,L extends List<T>> {
-		private final L list;
-		public ListBuilder(L list) { this.list = list; }
-		// xxx: more type dwim?
-		public ListBuilder<T,L> add(T t) { list.add(t); return this; }
-		public ListBuilder<T,L> addAll(Collection<? extends T> t) { list.addAll(t); return this; }
-		public ListBuilder<T,L> addAll(T... ts) { Collections.addAll(list, ts); return this; }
-		public L get() { return list; }
-		public List<T> getConst() { return Collections.unmodifiableList(list); }
-	}
-	public static <X> ListBuilder<X,List<X>> buildList(X x) {
-		return Empty.<X>buildList().add(x);
-	}
-	public static <X> ListBuilder<X,List<X>> buildList(Collection<? extends X> x) {
-		return Empty.<X>buildList().addAll(x);
-	}
-	public static <X> ListBuilder<X,List<X>> buildList() {
-		return new ListBuilder<X, List<X>>(new ArrayList<X>());
-	}
 }

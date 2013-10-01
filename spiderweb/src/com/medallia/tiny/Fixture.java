@@ -52,8 +52,10 @@ public interface Fixture {
 	
 	/** Do-nothing fixture */
 	Fixture NULL = new Fixture() {
-		@Implement public void up() { }
-		@Implement public void down() { }
+		@Override
+		public void up() { }
+		@Override
+		public void down() { }
 	};
 
 	/** Implementation of {@link Fixture} that wraps any number of other
@@ -95,7 +97,8 @@ public interface Fixture {
 		}
 		
 		/** call {@link #down()} on the wrapped {@link Fixture} objects */
-		@Implement public void down() throws Exception {
+		@Override
+		public void down() throws Exception {
 			if (n == 0 && !fixtures.isEmpty()) throw new AssertionError(this + " not up-ed");
 			Throwable firstFailure = null;
 			while (n-- > 0) {
@@ -112,7 +115,8 @@ public interface Fixture {
 		}
 
 		/** call {@link #up()} on the wrapped {@link Fixture} objects */
-		@Implement public void up() throws Exception {
+		@Override
+		public void up() throws Exception {
 			try {
 				for (Fixture f : fixtures) {
 					f.up();
@@ -148,11 +152,13 @@ public interface Fixture {
 			this.createMethod = createMethod;
 		}
 		
+		@Override
 		@Implement
 		public void up() throws Exception {
 			fixture = createMethod.call();
 			fixture.up();
 		}
+		@Override
 		@Implement
 		public void down() throws Exception {
 			fixture.down();
@@ -175,6 +181,7 @@ public interface Fixture {
 		public static void with(Fixture f, final Runnable r) throws Exception {
 			// Executors.callable eats exceptions, so this instead
 			with(f, new Callable<Void>() {
+				@Override
 				public Void call() throws Exception {
 					r.run();
 					return null;

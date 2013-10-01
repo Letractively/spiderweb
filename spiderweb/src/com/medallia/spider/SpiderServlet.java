@@ -44,6 +44,8 @@ import org.antlr.stringtemplate.StringTemplateWriter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.medallia.spider.MethodInvoker.LifecycleHandlerSet;
 import com.medallia.spider.StaticResources.StaticResource;
 import com.medallia.spider.StaticResources.StaticResourceLookup;
@@ -61,9 +63,7 @@ import com.medallia.spider.sttools.CachedTool;
 import com.medallia.spider.sttools.StTool;
 import com.medallia.spider.test.RenderTaskTestCase;
 import com.medallia.tiny.Clock;
-import com.medallia.tiny.Empty;
 import com.medallia.tiny.Encoding;
-import com.medallia.tiny.Implement;
 import com.medallia.tiny.ObjectProvider;
 import com.medallia.tiny.Strings;
 import com.medallia.tiny.string.ExplodingStringTemplateErrorListener;
@@ -222,7 +222,8 @@ public abstract class SpiderServlet extends HttpServlet {
 		registerStRenderers(pageStGroup);
 		
 		stringTemplateFactory = StRenderer.makeStringTemplateFactory(ExplodingStringTemplateErrorListener.LISTENER, new StToolProvider() {
-			@Implement public StTool getStTool(String name) {
+			@Override
+			public StTool getStTool(String name) {
 				return SpiderServlet.this.getStTool(name);
 			}
 		});
@@ -403,7 +404,7 @@ public abstract class SpiderServlet extends HttpServlet {
 			return;
 		}
 		
-		List<EmbeddedContent> embeddedContent = Empty.list();
+		List<EmbeddedContent> embeddedContent = Lists.newArrayList();
 		for (EmbeddedRenderTask ert : t.dependsOn())
 			renderEmbedded(ert, dynamicInput, request, embeddedContent);
 
@@ -416,7 +417,7 @@ public abstract class SpiderServlet extends HttpServlet {
 	}
 
 	private RequestHandler makeRequest(final HttpServletRequest req, final HttpServletResponse response, final DynamicInputImpl dynamicInput) {
-		final Map<String, String> m = Empty.hashMap();
+		final Map<String, String> m = Maps.newHashMap();
 		Cookie[] cookies = req.getCookies();
 		if (cookies != null) {
 			for (Cookie c : cookies) {
@@ -424,13 +425,16 @@ public abstract class SpiderServlet extends HttpServlet {
 			}
 		}
 		return new RequestHandler() {
-			@Implement public String getCookieValue(String name) {
+			@Override
+			public String getCookieValue(String name) {
 				return m.get(name);
 			}
-			@Implement public void setCookieValue(String name, String value) {
+			@Override
+			public void setCookieValue(String name, String value) {
 				storeCookie(makeCookie(name, value));
 			}
-			@Implement public void setPersistentCookieValue(String name, String value, int expiry) {
+			@Override
+			public void setPersistentCookieValue(String name, String value, int expiry) {
 				if (expiry <= 0)
 					throw new IllegalArgumentException("expiry must be a positive number: " + expiry);
 				
@@ -438,7 +442,8 @@ public abstract class SpiderServlet extends HttpServlet {
 				c.setMaxAge(expiry);
 				storeCookie(c);
 			}
-			@Implement public void removeCookieValue(String name) {
+			@Override
+			public void removeCookieValue(String name) {
 				Cookie c = makeCookie(name, null);
 				c.setMaxAge(0);
 				storeCookie(c);
@@ -450,16 +455,20 @@ public abstract class SpiderServlet extends HttpServlet {
 			private Cookie makeCookie(String name, String value) {
 				return new Cookie(name, value);
 			}
-			@Implement public HttpSession getSessionOrNull() {
+			@Override
+			public HttpSession getSessionOrNull() {
 				return req.getSession(false);
 			}
-			@Implement public HttpSession getOrCreateSession() {
+			@Override
+			public HttpSession getOrCreateSession() {
 				return req.getSession(true);
 			}
-			@Implement public <X> X getInput(String name, Class<X> type) {
+			@Override
+			public <X> X getInput(String name, Class<X> type) {
 				return dynamicInput.getInput(name, type);
 			}
-			@Implement public boolean invalidateSession() {
+			@Override
+			public boolean invalidateSession() {
 				HttpSession session = getSessionOrNull();
 				if (session != null)
 					session.invalidate();
@@ -568,7 +577,7 @@ public abstract class SpiderServlet extends HttpServlet {
 	}
 	
 	private Map<String, StTool> buildStToolsMap() {
-		Map<String, StTool> m = Empty.hashMap();
+		Map<String, StTool> m = Maps.newHashMap();
 		m.put("cached", new CachedTool(staticResourceLookup));
 		return m;
 	}
@@ -656,10 +665,10 @@ public abstract class SpiderServlet extends HttpServlet {
 			}
 		};
 		
-		ObjectProvider injector = makeObjectProvider(request);
+		ObjectProvider injector = makeObjectProvider(request).register(dynamicInput);
 
 		long nt = System.nanoTime();
-		PostAction po = renderer.actionAndRender(injector, makeLifecycleHandlerSet(request), dynamicInput);
+		PostAction po = renderer.actionAndRender(injector, makeLifecycleHandlerSet(request));
 		log.info("StRender of " + t.getClass().getSimpleName() + " in " + TimeUnit.MILLISECONDS.convert(System.nanoTime() - nt, TimeUnit.NANOSECONDS) + " ms");
 		return po;
 	}

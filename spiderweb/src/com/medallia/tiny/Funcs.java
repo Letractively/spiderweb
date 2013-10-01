@@ -27,6 +27,7 @@ import java.util.Map;
 /** Support for some functional idioms */
 public class Funcs {
 	public static final Func<Object,String> TO_STRING = new Func<Object, String>() {
+		@Override
 		public String call(Object a) {
 			return a == null ? null : a.toString();
 		}
@@ -100,17 +101,21 @@ public class Funcs {
 	/** Lazy version of 'map' -- will map each element as it is returned by the iterator */
 	public static <A,B> Iterable<B> wrapIterable(final Iterable<? extends A> as, final Func<A,B> func) {
 		return new Iterable<B>() {
-			@Implement 
+			@Override
+			
 			public Iterator<B> iterator() {
 				final Iterator<? extends A> it = as.iterator();
 				return new Iterator<B>() {
-					@Implement public boolean hasNext() {
+					@Override
+					public boolean hasNext() {
 						return it.hasNext();
 					}
-					@Implement public B next() {
+					@Override
+					public B next() {
 						return func.call(it.next());
 					}
-					@Implement public void remove() {
+					@Override
+					public void remove() {
 						it.remove();
 					}			
 				};
@@ -121,6 +126,7 @@ public class Funcs {
 	 * E.g. compareBy(new Func<Person,String() { String call(Person p) { return p.getFirstName(); } }) */
 	public static <X,Y extends Comparable<Y>> Comparator<X> compareBy(final Func<? super X, ? extends Y> func) {
 		return new Comparator<X>() {
+			@Override
 			public int compare(X o1, X o2) {
 				Y a1 = func.call(o1);
 				Y a2 = func.call(o2);
@@ -135,6 +141,7 @@ public class Funcs {
 	/** Identity function */
 	public static <X> Func<X,X> identity() {
 		return new Func<X,X>() {
+			@Override
 			public X call(X a) {
 				return a;
 			}
@@ -143,6 +150,7 @@ public class Funcs {
 	/** Format with a fixed format (should have one %) */
 	public static <X> Func<X,String> stringFormat(final String s) {
 		return new Func<X,String>() {
+			@Override
 			public String call(X a) {
 				return String.format(s, a);
 			}

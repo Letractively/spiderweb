@@ -24,7 +24,6 @@ import org.antlr.stringtemplate.StringTemplate;
 import com.medallia.spider.StaticResources.StaticResource;
 import com.medallia.spider.StaticResources.StaticResourceLookup;
 import com.medallia.tiny.Encoding;
-import com.medallia.tiny.Implement;
 
 
 /**
@@ -43,7 +42,8 @@ public class CachedTool implements StTool {
 		this.srl = srl;
 	}
 
-	@Implement public String render(StringTemplate st) {
+	@Override
+	public String render(StringTemplate st) {
 		String resourceName = String.valueOf(st.getAttribute("it"));
 		StaticResource sr = srl.findStaticResource(resourceName);
 		

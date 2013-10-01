@@ -20,6 +20,8 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
+import com.google.common.collect.ImmutableList;
+
 
 public class EncodingTest extends TestCase {
 	public static final String ENGLISH = "For he on honeydew hath fed, And drunk the milk of Paradise";
@@ -30,12 +32,12 @@ public class EncodingTest extends TestCase {
 	public static final String EVIL_STRING_NOLF = "quote\"ba[=ng]!eq=t\\'ick'back`><&amp;☃ $etc ";
 	public static final String EVIL_STRING = EVIL_STRING_NOLF + " lf\n cr\015..";
 
-	List<String> allStrings = Empty.<String>buildList()
-		.add(ENGLISH)
-		.add(EUROPEAN)
-		.add(SPECIALCHARS)
-		.add(RUSSIAN)
-		.add(FOREIGN_MIX).get();
+	List<String> allStrings = ImmutableList.of(
+		ENGLISH,
+		EUROPEAN,
+		SPECIALCHARS,
+		RUSSIAN,
+		FOREIGN_MIX);
 	
 	private void run(String text, boolean passISO8859) {
 		assertTrue(Encoding.isEncodable(text, Encoding.CHARSET_UTF8)); //UTF8 takes everything

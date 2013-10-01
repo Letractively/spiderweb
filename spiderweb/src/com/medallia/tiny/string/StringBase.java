@@ -28,10 +28,12 @@ public abstract class StringBase implements CharSequence, Serializable {
 	@Override public String toString() {
 		return s + "[an exploded " + this.getClass() + " (did you remember inScript() or inAttr()?)]";
 	}
+	@Override
 	public int length() {
 		return s.length();
 	}
 
+	@Override
 	public char charAt(int arg0) {
 		return s.charAt(arg0);
 	}

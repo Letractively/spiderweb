@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import junit.framework.TestCase;
 
@@ -45,15 +44,18 @@ public class CollUtilsTest extends TestCase {
 		final int[] hasNextCount = { 0 }, nextCount = { 0 };
 		final Iterator<Integer> myIt = Arrays.asList(new Integer[] { 1, 2, 3, 4, 5 }).iterator();
 		Iterator<List<Integer>> it = CollUtils.toIterableLists(new Iterator<Integer>() {
-			@Implement public boolean hasNext() {
+			@Override
+			public boolean hasNext() {
 				hasNextCount[0]++;
 				return myIt.hasNext();
 			}
-			@Implement public Integer next() {
+			@Override
+			public Integer next() {
 				nextCount[0]++;
 				return myIt.next();
 			}
-			@Implement public void remove() { myIt.remove(); }
+			@Override
+			public void remove() { myIt.remove(); }
 		}, 3).iterator();
 		assertTrue(it.hasNext());
 		assertEquals(3, it.next().size());
@@ -65,38 +67,6 @@ public class CollUtilsTest extends TestCase {
 		assertEquals(5, nextCount[0]);
 	}
 	
-	private <X> void testIntersection(Collection<X> expected, Collection<X> ... collections) {
-		List<Set<X>> lists = Empty.list();
-		for (Collection<X> item : collections) {
-			lists.add(Empty.hashSet(item));
-		}
-
-		assertEquals(Empty.hashSet(expected), CollUtils.intersection(lists));
-		assertEquals(Empty.hashSet(expected), CollUtils.intersectionInplace(lists));
-	}
-	
-	@SuppressWarnings("unchecked")
-	public void testIntersection() {
-		testIntersection(Arrays.asList(1,2,3), Arrays.asList(1, 2, 3));
-		testIntersection(Arrays.asList(1,2,3,4,5),
-			Arrays.asList(1, 2, 3, 4, 5),
-			Arrays.asList(1, 2, 3, 4, 5),
-			Arrays.asList(1, 2, 3, 4, 5)
-		);
-		testIntersection(Collections.<Integer>emptyList(),
-			Arrays.asList(1, 2, 3, 4, 5),
-			Arrays.asList(1, 2, 3),
-			Arrays.asList(4, 5)
-		);
-		testIntersection(Collections.<Integer>emptyList());
-		
-		testIntersection(Collections.<Integer>emptyList(),
-			Arrays.asList(1, 2, 3, 4, 5),
-			Collections.<Integer>emptyList()
-		);
-	}
-	
-
 	public void testSortedCopy() {
 		List<Integer> l = Arrays.asList(new Integer[] { 52, 5, 16 });
 		List<Integer> sorted = CollUtils.sortedCopy(l);
@@ -105,6 +75,7 @@ public class CollUtilsTest extends TestCase {
 		assertEquals(l, sorted);
 
 		sorted = CollUtils.sortedCopy(l, new Comparator<Integer>() {
+			@Override
 			public int compare(Integer o1, Integer o2) {
 				return o2.compareTo(o1);
 			}

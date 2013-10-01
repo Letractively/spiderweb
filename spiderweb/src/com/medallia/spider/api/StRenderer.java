@@ -38,6 +38,10 @@ import org.antlr.stringtemplate.StringTemplateWriter;
 import org.antlr.stringtemplate.language.ASTExpr;
 import org.apache.commons.lang.StringEscapeUtils;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.medallia.spider.MethodInvoker;
 import com.medallia.spider.MethodInvoker.LifecycleHandlerSet;
 import com.medallia.spider.api.StRenderable.Input;
@@ -46,10 +50,7 @@ import com.medallia.spider.api.StRenderable.PostAction;
 import com.medallia.spider.api.StRenderable.StTemplatePostAction;
 import com.medallia.spider.api.StRenderable.V;
 import com.medallia.spider.sttools.StTool;
-import com.medallia.tiny.CollUtils;
-import com.medallia.tiny.Empty;
 import com.medallia.tiny.Encoding;
-import com.medallia.tiny.Implement;
 import com.medallia.tiny.ObjectProvider;
 import com.medallia.tiny.string.HtmlString;
 import com.medallia.tiny.string.JsString;
@@ -97,6 +98,7 @@ public abstract class StRenderer {
 	protected StRenderPostAction stRenderPostAction(String templateName) {
 		final String stContent = render(templateName);
 		return new StRenderPostAction() {
+			@Override
 			public String getStContent() {
 				return stContent;
 			}
@@ -107,12 +109,11 @@ public abstract class StRenderer {
 	 * Call the action method of the {@link StRenderable}, render the template if applicable and return the result.
 	 * 
 	 * @param injector dependency injector with the objects available for injection
-	 * @param dynamicInput provider for request input parameters
 	 * @return result of the action and render
 	 * @throws MissingAttributesException if the template referenced any attributes not set by the action method
 	 */
-	public PostAction actionAndRender(ObjectProvider injector, LifecycleHandlerSet hs, DynamicInputImpl dynamicInput) throws MissingAttributesException {
-		PostAction pa = invokeAction(injector, hs, dynamicInput);
+	public PostAction actionAndRender(ObjectProvider injector, LifecycleHandlerSet hs) throws MissingAttributesException {
+		PostAction pa = invokeAction(injector, hs);
 		return pa == null ? defaultPostAction() : render(pa);
 	}
 	
@@ -125,7 +126,7 @@ public abstract class StRenderer {
 	}
 
 	/** map from the class to the action method of that class; stored for performance reasons */
-	private static final ConcurrentMap<Class<?>, Method> ACTION_METHOD_MAP = Empty.concurrentMap();
+	private static final ConcurrentMap<Class<?>, Method> ACTION_METHOD_MAP = Maps.newConcurrentMap();
 	
 	/** @return the action method of the given class; throws AssertionError if no such method exists */
 	private static Method findActionMethod(Class<?> clazz) {
@@ -133,7 +134,7 @@ public abstract class StRenderer {
 		if (am != null)
 			return am;
 		
-		for (Method m : CollUtils.concat(Arrays.asList(clazz.getMethods()), Arrays.asList(clazz.getDeclaredMethods()))) {
+		for (Method m : Iterables.concat(Arrays.asList(clazz.getMethods()), Arrays.asList(clazz.getDeclaredMethods()))) {
 			if (m.getName().equals("action")) {
 				int modifiers = m.getModifiers();
 				if (Modifier.isPrivate(modifiers) || Modifier.isStatic(modifiers)) continue;
@@ -145,14 +146,14 @@ public abstract class StRenderer {
 		throw new AssertionError("No action method found in " + clazz);
 	}
 	
-	private static final ConcurrentMap<Class<?>, Class<?>> INPUT_ANNOTATION_MAP = Empty.concurrentMap();
-	private static final ConcurrentMap<Class<?>, Class<?>> OUTPUT_ANNOTATION_MAP = Empty.concurrentMap();
+	private static final ConcurrentMap<Class<?>, Class<?>> INPUT_ANNOTATION_MAP = Maps.newConcurrentMap();
+	private static final ConcurrentMap<Class<?>, Class<?>> OUTPUT_ANNOTATION_MAP = Maps.newConcurrentMap();
 	
 	/** @return the interface declared within the given class which is also annotated with the given annotation */ 
 	private static <X extends Annotation> Class<X> findInterfaceWithAnnotation(Map<Class<?>, Class<?>> methodMap, Class<?> clazz, Class<? extends Annotation> annotation) {
 		Class<?> annotatedInterface = methodMap.get(clazz);
 		if (annotatedInterface == null) {
-			for (Class<?> c : CollUtils.concat(Arrays.asList(clazz.getClasses()), Arrays.asList(clazz.getDeclaredClasses()))) {
+			for (Class<?> c : Iterables.concat(Arrays.asList(clazz.getClasses()), Arrays.asList(clazz.getDeclaredClasses()))) {
 				Annotation i = c.getAnnotation(annotation);
 				if (i != null) {
 					annotatedInterface = c;
@@ -174,13 +175,13 @@ public abstract class StRenderer {
 	 * @param inputParams the request parameters
 	 * @return result of the action and render
 	 */
-	public PostAction invokeAction(ObjectProvider injector, LifecycleHandlerSet hs, DynamicInputImpl dynamicInput) {
-		injector = injector.copyWith(dynamicInput).errorOnUnknownType();
+	public PostAction invokeAction(ObjectProvider injector, LifecycleHandlerSet hs) {
+		injector = injector.copyWith(null).errorOnUnknownType();
 		
 		Method am = findActionMethod(renderable.getClass());
 		Class<Input> inputInterface = findInterfaceWithAnnotation(INPUT_ANNOTATION_MAP, renderable.getClass(), Input.class);
 		if (inputInterface != null) {
-			injector.register(createInput(inputInterface, dynamicInput));
+			injector.register(createInput(inputInterface, injector.get(DynamicInputImpl.class)));
 		}
 		
 		return (PostAction) new MethodInvoker(injector, hs).invoke(am, renderable);
@@ -201,6 +202,7 @@ public abstract class StRenderer {
 	private Object createInput(Class<?> x, final DynamicInputImpl dynamicInput) {
 		return Proxy.newProxyInstance(x.getClassLoader(), new Class<?>[] { x }, 
 			new InvocationHandler() {
+				@Override
 				public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 					return dynamicInput.getInput(method.getName(), method.getReturnType(), method);
 				}
@@ -252,8 +254,8 @@ public abstract class StRenderer {
 	 * in the template, but without a value set.
 	 */
 	private static class StMissingAttrs {
-		public final List<String> missingAttrs = Empty.list();
-		public final Set<String> nullAttrs = Empty.hashSet();
+		public final List<String> missingAttrs = Lists.newArrayList();
+		public final Set<String> nullAttrs = Sets.newHashSet();
 	}
 	
 	private static final ThreadLocal<StMissingAttrs> ST_MISSING_ATTRS_TL = new ThreadLocal<StMissingAttrs>();
@@ -272,7 +274,8 @@ public abstract class StRenderer {
 	
 	private void setStTemplatePathTl() {
 		ST_TEMPLATE_PATH_TL.set(new StTemplatePath() {
-			@Implement public String findPathForTemplate(String name) {
+			@Override
+			public String findPathForTemplate(String name) {
 				return StRenderer.this.findPathForTemplate(renderable.getClassForTemplateName(), name);
 			}
 		});
@@ -426,16 +429,19 @@ public abstract class StRenderer {
 		registerWebRenderers(stGroup);
 		
 		return new StringTemplateFactory() {
-			@Implement public StringTemplate getStInstance(String templateName) {
+			@Override
+			public StringTemplate getStInstance(String templateName) {
 				return stGroup.getInstanceOf(templateName);
 			}
-			@Implement public StringTemplate makeStInstance(String template) {
+			@Override
+			public StringTemplate makeStInstance(String template) {
 				StringTemplate st = stGroup.createStringTemplate();
 				st.setGroup(stGroup);
 				st.setTemplate(template);
 				return st;
 			}
-			@Implement public void setRefreshInterval(int seconds) {
+			@Override
+			public void setRefreshInterval(int seconds) {
 				stGroup.setRefreshInterval(seconds);
 			}
 		};
@@ -455,6 +461,7 @@ public abstract class StRenderer {
 		stGroup.registerRenderer(HtmlString.class, HtmlString.ST_RENDERER);
 		stGroup.registerRenderer(JsString.class, JsString.ST_RENDERER);
 		stGroup.registerRenderer(String.class, new SimpleAttributeRenderer() {
+			@Override
 			public String toString(Object o) {
 				return StringEscapeUtils.escapeHtml(String.valueOf(o));
 			}

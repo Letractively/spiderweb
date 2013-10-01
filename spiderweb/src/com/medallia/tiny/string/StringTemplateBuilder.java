@@ -26,7 +26,6 @@ import org.antlr.stringtemplate.language.DefaultTemplateLexer;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import com.medallia.tiny.Empty;
-import com.medallia.tiny.Implement;
 
 /**
  * Builder for StringTemplate objects. Also has a few utility functions for working with StringTemplates.
@@ -93,6 +92,7 @@ public class StringTemplateBuilder {
 		st.setErrorListener(ExplodingStringTemplateErrorListener.LISTENER);
 		if (escapeHtml) {
 			st.registerRenderer(String.class, new SimpleAttributeRenderer() {
+				@Override
 				public String toString(Object o) {
 					return StringEscapeUtils.escapeHtml(String.valueOf(o));
 				}
@@ -113,6 +113,7 @@ public class StringTemplateBuilder {
 	public static void verifyValidTemplate(String template) {
 		StringTemplate st = st("");
 		st.setErrorListener(new StringTemplateErrorListener() {
+			@Override
 			public void error(String s, Throwable ex) {
 				// dig deep for a reasonable error string
 				Throwable last = null;
@@ -120,6 +121,7 @@ public class StringTemplateBuilder {
 					last = t;
 				throw new RuntimeException(last != null ? last.getMessage() : s, ex);
 			}
+			@Override
 			public void warning(String s) {
 				throw new RuntimeException(s);
 			}
@@ -137,7 +139,8 @@ public class StringTemplateBuilder {
 	 * {@link #toString(Object, String)} call to {@link #toString(Object)}
 	 */
 	public abstract static class SimpleAttributeRenderer implements AttributeRenderer {
-		@Implement public String toString(Object s, String format) {
+		@Override
+		public String toString(Object s, String format) {
 			return toString(s);
 		}
 	}

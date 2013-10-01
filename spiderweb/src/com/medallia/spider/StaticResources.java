@@ -5,8 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
-import com.medallia.tiny.Empty;
-import com.medallia.tiny.Implement;
+import com.google.common.collect.Maps;
 import com.medallia.tiny.MimeType;
 
 public class StaticResources {
@@ -22,7 +21,7 @@ public class StaticResources {
 	}
 	
 	/** map from URI ending to resource path, i.e. package name. */
-	private static final Map<String, String> resourceMap = Empty.hashMap();
+	private static final Map<String, String> resourceMap = Maps.newHashMap();
 	static {
 		addResourceMapping("images", "gif", "jpg", "png");
 		addResourceMapping("css", "css");
@@ -38,7 +37,8 @@ public class StaticResources {
 	
 	public static StaticResourceLookup makeStaticResourceLookup(final Class<?> clazz) {
 		return new StaticResourceLookup() {
-			@Implement public StaticResource findStaticResource(String uri) {
+			@Override
+			public StaticResource findStaticResource(String uri) {
 				int k = uri.lastIndexOf('.');
 				if (k > 0) {
 					final String ext = uri.substring(k + 1);
@@ -49,13 +49,16 @@ public class StaticResources {
 					final InputStream in = path != null ? clazz.getResourceAsStream(path + "/" + resourceName) : null;
 					
 					return new StaticResource() {
-						@Implement public boolean exists() {
+						@Override
+						public boolean exists() {
 							return in != null;
 						}
-						@Implement public String getMimeType() {
+						@Override
+						public String getMimeType() {
 							return MimeType.getMimeTypeForExtension(ext);
 						}
-						@Implement public void copyTo(OutputStream stream) throws IOException {
+						@Override
+						public void copyTo(OutputStream stream) throws IOException {
 							if (!exists())
 								throw new RuntimeException("Resource " + resourceName + " in " + path + " for " + clazz + " not found");
 							IOHelpers.copy(in, stream);

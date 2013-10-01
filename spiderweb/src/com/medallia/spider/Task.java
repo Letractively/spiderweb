@@ -26,12 +26,12 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.medallia.spider.api.StRenderable;
 import com.medallia.spider.api.StRenderer.StRenderPostAction;
-import com.medallia.tiny.CollUtils;
-import com.medallia.tiny.Empty;
 import com.medallia.tiny.Encoding;
-import com.medallia.tiny.Implement;
 import com.medallia.tiny.string.JsString;
 import com.medallia.tiny.web.HttpHeaders;
 
@@ -44,6 +44,7 @@ public abstract class Task implements ITask {
 	/** @return a PostAction pointing at the given template, which will be used for rendering instead of the default */
 	public static StTemplatePostAction template(final String templateName) {
 		return new StTemplatePostAction() {
+			@Override
 			public String templateName() { return templateName; }
 		};
 	}
@@ -70,6 +71,7 @@ public abstract class Task implements ITask {
 	/** @return a PostAction which redirects to the HTTP referer, i.e. the action the client came from */
 	public static PostAction redirectToReferer() {
 		return new CustomPostAction() {
+			@Override
 			public void respond(HttpServletRequest req, HttpServletResponse res) throws IOException {
 				res.sendRedirect(req.getHeader("Referer"));
 			}
@@ -83,6 +85,7 @@ public abstract class Task implements ITask {
 	/** @return a PostAction which redirects to given task with the given query string */
 	public static PostAction redirectToTask(final Class<? extends IRenderTask> ct, final String qs) {
 		return new CustomPostAction() {
+			@Override
 			public void respond(HttpServletRequest req, HttpServletResponse res) throws IOException {
 				URL url = new URL(req.getRequestURL().toString());
 				String path = url.getPath();
@@ -107,11 +110,12 @@ public abstract class Task implements ITask {
 		return V.v();
 	}
 	
-	@Implement public Class<?> getClassForTemplateName() {
+	@Override
+	public Class<?> getClassForTemplateName() {
 		return getClass();
 	}
 	
-	private final Map<V<?>, Object> attrs = Empty.hashMap();
+	private final Map<V<?>, Object> attrs = Maps.newHashMap();
 	
 	/** set an attribute available in the StringTemplate
 	 * 
@@ -125,13 +129,15 @@ public abstract class Task implements ITask {
 		return obj;
 	}
 
-	@Implement public <X> X getAttr(V<X> tag) {
+	@Override
+	public <X> X getAttr(V<X> tag) {
 		@SuppressWarnings("unchecked")
 		X x = (X) attrs.get(tag);
 		return x;
 	}
 	
-	@Implement public boolean hasAttr(V<?> tag) {
+	@Override
+	public boolean hasAttr(V<?> tag) {
 		return attrs.containsKey(tag);
 	}
 	
@@ -154,7 +160,8 @@ public abstract class Task implements ITask {
 		 */
 		protected boolean isCacheForever() { return false; }
 		
-		@Implement public void respond(HttpServletRequest req, HttpServletResponse res) throws IOException {
+		@Override
+		public void respond(HttpServletRequest req, HttpServletResponse res) throws IOException {
 			if (isCacheForever())
 				HttpHeaders.addCacheForeverHeaders(res);
 			else
@@ -165,17 +172,18 @@ public abstract class Task implements ITask {
 		}
 	}
 	
-	@Implement public Collection<EmbeddedRenderTask> dependsOn() {
+	@Override
+	public Collection<EmbeddedRenderTask> dependsOn() {
 		return with();
 	}
 	
 	/** convenience method for returning embedded task instances */
 	public Collection<EmbeddedRenderTask> with(EmbeddedRenderTask... tasks) {
-		return Empty.list(Arrays.asList(tasks));
+		return Lists.newArrayList(tasks);
 	}
 	/** convenience method for returning embedded task instances */
 	public Collection<EmbeddedRenderTask> with(EmbeddedRenderTask[] ta, EmbeddedRenderTask... tasks) {
-		return CollUtils.concat(Arrays.asList(tasks), Arrays.asList(ta));
+		return Lists.newArrayList(Iterables.concat(Arrays.asList(ta), Arrays.asList(tasks)));
 	}
 	
 }

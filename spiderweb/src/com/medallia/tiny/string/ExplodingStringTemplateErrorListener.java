@@ -28,9 +28,11 @@ public class ExplodingStringTemplateErrorListener implements StringTemplateError
 	
 	public static final StringTemplateErrorListener LISTENER = new ExplodingStringTemplateErrorListener();
 	
+	@Override
 	public void error(String msg, Throwable t) {
 		throw new RuntimeException(msg, t);
 	}
+	@Override
 	public void warning(String msg) {
 		throw new RuntimeException("Warning: " + msg);
 	}

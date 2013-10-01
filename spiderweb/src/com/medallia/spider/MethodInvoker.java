@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import com.medallia.tiny.CollUtils;
-import com.medallia.tiny.Empty;
-import com.medallia.tiny.Implement;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.medallia.tiny.ObjectProvider;
 
 /**
@@ -43,11 +43,13 @@ public class MethodInvoker {
 	/** @return a {@link LifecycleHandlerSet} that should be passed to {@link #MethodInvoker(ObjectProvider, LifecycleHandlerSet)} */
 	public static LifecycleHandlerSet getLifecycleHandlerSet() {
 		return new LifecycleHandlerSet0() {
-			private final Map<Class<?>, LifecycleHandler<?>> m = Empty.hashMap();
-			@Implement public <X> void register(Class<X> clazz, LifecycleHandler<X> h) {
+			private final Map<Class<?>, LifecycleHandler<?>> m = Maps.newHashMap();
+			@Override
+			public <X> void register(Class<X> clazz, LifecycleHandler<X> h) {
 				m.put(clazz, h);
 			}
-			@Implement public Map<Class<?>, LifecycleHandler<?>> getHandlers() {
+			@Override
+			public Map<Class<?>, LifecycleHandler<?>> getHandlers() {
 				return m;
 			}
 		};
@@ -71,7 +73,8 @@ public class MethodInvoker {
 	public <X> X invoke(final Constructor<X> cons) {
 		final Object[] consArgs = injector.makeArgsFor(cons);
 		return invoke(consArgs, new Callable<X>(){
-			@Implement public X call() throws ReflectiveOperationException {
+			@Override
+			public X call() throws ReflectiveOperationException {
 				try {
 					return cons.newInstance(consArgs);
 				} catch (ReflectiveOperationException e) {
@@ -87,7 +90,8 @@ public class MethodInvoker {
 	public Object invoke(final Method m, final Object obj) {
 		final Object[] args = injector.makeArgsFor(m);
 		return invoke(args, new Callable<Object>(){
-			@Implement public Object call() throws ReflectiveOperationException {
+			@Override
+			public Object call() throws ReflectiveOperationException {
 				try {
 					return m.invoke(obj, args);
 				} catch (ReflectiveOperationException e) {
@@ -114,15 +118,15 @@ public class MethodInvoker {
 		}
 	}
 	
-	private <X> X invoke(List<BoundLifecycleHandler> hl, Object[] args, Callable<X> c) throws Exception {
-		if (hl.isEmpty()) {
+	private <X> X invoke(Iterable<BoundLifecycleHandler> hl, Object[] args, Callable<X> c) throws Exception {
+		if (Iterables.isEmpty(hl)) {
 			return c.call();
 		} else {
-			BoundLifecycleHandler h = CollUtils.first(hl);
+			BoundLifecycleHandler h = Iterables.getFirst(hl, null);
 			h.onInit();
 			X x;
 			try {
-				x = invoke(CollUtils.tail(hl), args, c);
+				x = invoke(Iterables.skip(hl, 1), args, c);
 			} catch (Throwable t) {
 				try {
 					h.onError(t);
@@ -137,7 +141,7 @@ public class MethodInvoker {
 	}
 	
 	private List<BoundLifecycleHandler> findLifecycleHandlers(Object[] args) {
-		List<BoundLifecycleHandler> l = Empty.list();
+		List<BoundLifecycleHandler> l = Lists.newArrayList();
 		for (Object o : args) {
 			if (o != null) {
 				LifecycleHandler<?> h = findHandler(o);
@@ -161,9 +165,12 @@ public class MethodInvoker {
 		@SuppressWarnings("unchecked")
 		final X x = (X) o;
 		return new BoundLifecycleHandler() {
-			@Implement public void onInit() { h.onInit(x); }
-			@Implement public void onError(Throwable t) { h.onError(x, t); }
-			@Implement public void onSuccess() { h.onSuccess(x); }
+			@Override
+			public void onInit() { h.onInit(x); }
+			@Override
+			public void onError(Throwable t) { h.onError(x, t); }
+			@Override
+			public void onSuccess() { h.onSuccess(x); }
 		};
 	}
 	

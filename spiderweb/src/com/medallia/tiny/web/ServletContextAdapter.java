@@ -27,101 +27,123 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
-import com.medallia.tiny.Implement;
-
 
 /** empty implementation of ServletContext */
 public class ServletContextAdapter implements ServletContext {
 
-	@Implement public Object getAttribute(String arg0) {
+	@Override
+	public Object getAttribute(String arg0) {
 		return null;
 	}
 
-	@Implement public Enumeration getAttributeNames() {
+	@Override
+	public Enumeration getAttributeNames() {
 		return null;
 	}
 
-	@Implement public ServletContext getContext(String arg0) {
+	@Override
+	public ServletContext getContext(String arg0) {
 		return null;
 	}
 
-	@Implement public String getInitParameter(String arg0) {
+	@Override
+	public String getInitParameter(String arg0) {
 		return null;
 	}
 
-	@Implement public Enumeration getInitParameterNames() {
+	@Override
+	public Enumeration getInitParameterNames() {
 		return null;
 	}
 
-	@Implement public int getMajorVersion() {
+	@Override
+	public int getMajorVersion() {
 		return 0;
 	}
 
-	@Implement public String getMimeType(String arg0) {
+	@Override
+	public String getMimeType(String arg0) {
 		return null;
 	}
 
-	@Implement public int getMinorVersion() {
+	@Override
+	public int getMinorVersion() {
 		return 0;
 	}
 
-	@Implement public RequestDispatcher getNamedDispatcher(String arg0) {
+	@Override
+	public RequestDispatcher getNamedDispatcher(String arg0) {
 		return null;
 	}
 
-	@Implement public String getRealPath(String arg0) {
+	@Override
+	public String getRealPath(String arg0) {
 		return null;
 	}
 
-	@Implement public RequestDispatcher getRequestDispatcher(String arg0) {
+	@Override
+	public RequestDispatcher getRequestDispatcher(String arg0) {
 		return null;
 	}
 
-	@Implement public URL getResource(String arg0) throws MalformedURLException {
+	@Override
+	public URL getResource(String arg0) throws MalformedURLException {
 		return null;
 	}
 
-	@Implement public InputStream getResourceAsStream(String arg0) {
+	@Override
+	public InputStream getResourceAsStream(String arg0) {
 		return null;
 	}
 
-	@Implement public Set getResourcePaths(String arg0) {
+	@Override
+	public Set getResourcePaths(String arg0) {
 		return null;
 	}
 
-	@Implement public String getServerInfo() {
+	@Override
+	public String getServerInfo() {
 		return null;
 	}
 
-	@Implement public Servlet getServlet(String arg0) throws ServletException {
+	@Override
+	public Servlet getServlet(String arg0) throws ServletException {
 		return null;
 	}
 
-	@Implement public String getServletContextName() {
+	@Override
+	public String getServletContextName() {
 		return null;
 	}
 
-	@Implement public Enumeration getServletNames() {
+	@Override
+	public Enumeration getServletNames() {
 		return null;
 	}
 
-	@Implement public Enumeration getServlets() {
+	@Override
+	public Enumeration getServlets() {
 		return null;
 	}
 
-	@Implement public void log(String arg0) {
+	@Override
+	public void log(String arg0) {
 	}
 
-	@Implement public void log(Exception arg0, String arg1) {
+	@Override
+	public void log(Exception arg0, String arg1) {
 	}
 
-	@Implement public void log(String arg0, Throwable arg1) {
+	@Override
+	public void log(String arg0, Throwable arg1) {
 	}
 
-	@Implement public void removeAttribute(String arg0) {
+	@Override
+	public void removeAttribute(String arg0) {
 	}
 
-	@Implement public void setAttribute(String arg0, Object arg1) {
+	@Override
+	public void setAttribute(String arg0, Object arg1) {
 	}
 
 }

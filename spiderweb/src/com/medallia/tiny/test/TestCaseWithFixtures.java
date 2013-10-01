@@ -70,9 +70,11 @@ public abstract class TestCaseWithFixtures extends TestCase {
 	protected final void setUp() throws Exception {
 		if (fixtures == null) throw new Error("Already up()ed");
 		addFixture(new Fixture() {
+			@Override
 			public void down() throws Exception {
 				safeDown();
 			}
+			@Override
 			public void up() throws Exception {
 				safeUp();
 			}

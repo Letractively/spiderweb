@@ -21,8 +21,8 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -34,16 +34,16 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.fileupload.util.Streams;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.medallia.spider.IOHelpers;
 import com.medallia.spider.api.StRenderable.DynamicInput;
 import com.medallia.spider.api.StRenderable.Input;
 import com.medallia.spider.api.StRenderable.UploadedFile;
 import com.medallia.spider.api.StRenderer.InputArgHandler;
 import com.medallia.spider.api.StRenderer.InputArgParser;
-import com.medallia.tiny.CollUtils;
-import com.medallia.tiny.Empty;
 import com.medallia.tiny.Encoding;
-import com.medallia.tiny.Implement;
 import com.medallia.tiny.Strings;
 
 /** Implementation of {@link DynamicInput} that is also used to parse the
@@ -54,15 +54,15 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 	private final Map<String, String[]> inputParams;
 	private final Map<String, UploadedFile> fileUploads;
 	
-	private final Map<Class<?>, InputArgParser<?>> inputArgParsers = Empty.hashMap();
+	private final Map<Class<?>, InputArgParser<?>> inputArgParsers = Maps.newHashMap();
 
 	/**
 	 * @param the request from which to read the request parameters
 	 */
 	public DynamicInputImpl(HttpServletRequest request) {
 		if (ServletFileUpload.isMultipartContent(request)) {
-			this.fileUploads = Empty.hashMap();
-			Map<String, List<String>> inputParamsWithList = Empty.hashMap();
+			this.fileUploads = Maps.newHashMap();
+			Multimap<String, String> inputParamsWithList = ArrayListMultimap.create();
 
 			ServletFileUpload upload = new ServletFileUpload();
 			try {
@@ -72,7 +72,7 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 					String fieldName = item.getFieldName();
 					InputStream stream = item.openStream();
 					if (item.isFormField()) {
-						CollUtils.addToMapList(inputParamsWithList, fieldName, Streams.asString(stream, Encoding.CHARSET_UTF8_NAME));
+						inputParamsWithList.put(fieldName, Streams.asString(stream, Encoding.CHARSET_UTF8_NAME));
 					} else {
 						final String filename = item.getName();
 						final byte[] bytes = IOHelpers.toByteArray(stream);
@@ -89,8 +89,8 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 						});
 					}
 				}
-				this.inputParams = Empty.hashMap();
-				for (Entry<String, List<String>> entry: inputParamsWithList.entrySet()) {
+				this.inputParams = Maps.newHashMap();
+				for (Entry<String, Collection<String>> entry: inputParamsWithList.asMap().entrySet()) {
 					inputParams.put(entry.getKey(), entry.getValue().toArray(new String[0]));
 				}
 			} catch (IOException e) {
@@ -106,11 +106,13 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 		}
 	}
 	
-	@Implement public <X> void registerArgParser(Class<X> type, InputArgParser<X> parser) {
+	@Override
+	public <X> void registerArgParser(Class<X> type, InputArgParser<X> parser) {
 		inputArgParsers.put(type, parser);
 	}
 
-	@Implement public <X> X getInput(String name, Class<X> type) {
+	@Override
+	public <X> X getInput(String name, Class<X> type) {
 		return getInput(name, type, emptyAnnotatedElement);
 	}
 	
@@ -233,10 +235,14 @@ public class DynamicInputImpl implements DynamicInput, InputArgHandler {
 	}
 	
 	private static final AnnotatedElement emptyAnnotatedElement = new AnnotatedElement() {
-		@Implement public <T extends Annotation> T getAnnotation(Class<T> annotationType) { return null; }
-		@Implement public Annotation[] getAnnotations() { return null; }
-		@Implement public Annotation[] getDeclaredAnnotations() { return null; }
-		@Implement public boolean isAnnotationPresent(Class<? extends Annotation> annotationType) { return false; }
+		@Override
+		public <T extends Annotation> T getAnnotation(Class<T> annotationType) { return null; }
+		@Override
+		public Annotation[] getAnnotations() { return null; }
+		@Override
+		public Annotation[] getDeclaredAnnotations() { return null; }
+		@Override
+		public boolean isAnnotationPresent(Class<? extends Annotation> annotationType) { return false; }
 	};
 
 }

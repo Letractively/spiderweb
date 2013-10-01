@@ -27,11 +27,13 @@ package com.medallia.tiny;
 public interface Predicate<E> extends EPredicate<E, RuntimeException> {
 
 	/** @return true if the object is "good", "accepted", "approved" etc */
+	@Override
 	boolean accept(E e);
 
 	/** pre-defined predicates */
 	public static class Predicates {
 		public static final Predicate ACCEPT_ALL = new Predicate() {
+			@Override
 			public boolean accept(Object e) { return true; }
 		};
 		/** @return a predicate that accepts all objects */
@@ -41,6 +43,7 @@ public interface Predicate<E> extends EPredicate<E, RuntimeException> {
 		/** @return a predicate that is the inverse of the given predicate */
 		public static <X> Predicate<X> not(final Predicate<X> p) {
 			return new Predicate<X>() {
+				@Override
 				public boolean accept(X e) {
 					return !p.accept(e);
 				}
@@ -48,6 +51,7 @@ public interface Predicate<E> extends EPredicate<E, RuntimeException> {
 		}
 		
 		public static final Predicate NOT_NULL = new Predicate() {
+			@Override
 			public boolean accept(Object e) {
 				return e != null;
 			}

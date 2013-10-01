@@ -16,8 +16,6 @@
  */
 package com.medallia.tiny;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -34,12 +32,6 @@ import java.util.Set;
  */
 public class CollUtils {
 
-	/** @return If the given array reference is null, return an empty list, otherwise return Arrays.asList */
-	public static <T> List<T> asListOrEmpty(T... a) {
-		if (a == null) return Collections.emptyList();
-		return Arrays.asList(a);
-	}
-	
 	/** Put a lowercase version of k in the map if it is non-null */
 	public static <V> void putLowerNotNull(Map<String, V> m, String k, V v) {
 		if (k != null) m.put(k.toLowerCase(), v);
@@ -112,6 +104,7 @@ public class CollUtils {
 			final Comparator<? super X> b) 
 	{
 		return new Comparator<X>() {
+			@Override
 			public int compare(X o1, X o2) {
 				int i = a.compare(o1, o2);
 				return i != 0 ? i : b.compare(o1,o2);
@@ -152,7 +145,8 @@ public class CollUtils {
 	/** Wrap the given iterator in an iterable */
 	public static <X> Iterable<X> iterable(final Iterator<X> it) {
 		return new Iterable<X>() {
-			@Implement public Iterator<X> iterator() {
+			@Override
+			public Iterator<X> iterator() {
 				return it;
 			}
 		};
@@ -162,11 +156,13 @@ public class CollUtils {
 	public static <X> Iterable<List<X>> toIterableLists(final Iterator<X> it, final int maxPerList) {
 		return iterable(new Iterator<List<X>>() {
 			private boolean atEnd = false;
-			@Implement public boolean hasNext() {
+			@Override
+			public boolean hasNext() {
 				atEnd = atEnd || !it.hasNext();
 				return !atEnd;
 			}
-			@Implement public List<X> next() {
+			@Override
+			public List<X> next() {
 				List<X> l = Empty.list();
 				int k = 0;
 				do {
@@ -176,6 +172,7 @@ public class CollUtils {
 				} while (true);
 				return l;
 			}
+			@Override
 			public void remove() { throw new UnsupportedOperationException(); }
 		});
 	}
@@ -187,21 +184,6 @@ public class CollUtils {
 			l.add(x);
 		}
 		return l;
-	}
-
-	/**
-	 * Creates a map from the entries in another map whose keys are in <code>keys</code>.
-	 * Iterating over the resulting map gives the elements in the order of <code>keys</code>.
-	 * If any element of <code>keys</code> is not in the input map, there will be no such entry in the returned map.
-	 * @return a "submap" of <code>m</code> where all the keys are taken from <code>keys</code>.
-	 */
-	public static <X, Y> Map<X, Y> retainOnly(Map<X, Y> m, X ... keys) {
-		Map<X, Y> r = Empty.linkedHashMap();
-		for (X key : keys) {
-			if (m.containsKey(key))
-				r.put(key, m.get(key));
-		}
-		return r;
 	}
 
 	/** toString up to maxElements of the given collection */ 
@@ -216,19 +198,6 @@ public class CollUtils {
 		return (T[])java.lang.reflect.Array.newInstance(type, n);
 	}
 
-	/** add those elements which are not null to the given collection and return it */
-	public static <X> Collection<X> addNonNulls(Collection<X> c, X... xl) {
-		for (X x : xl) {
-			if (x != null) c.add(x);
-		}
-		return c;
-	}
-
-	/** return a list with those elements that are not null */
-	public static <X> List<X> listWithNonNulls(X... c) {
-		return (List<X>) addNonNulls(Empty.<X>list(), c);
-	}
-	
 	/** object that returns a subset of a given collection; also allows for passing through
 	 * an Exception in a type-safe manner */
 	public interface ECollectionFilter<X, Z extends Exception> {
@@ -239,6 +208,7 @@ public class CollUtils {
 	/** object that returns a subset of a given collection */
 	public interface CollectionFilter<X> extends ECollectionFilter<X, RuntimeException> {
 		/** @return a subset of a given collection */
+		@Override
 		Collection<X> filtered(Collection<X> c);
 	}
 
@@ -246,7 +216,8 @@ public class CollUtils {
 	public static final <X> CollectionFilter<X> collectionFilter(Predicate<? super X> pred) {
 		final ECollectionFilter<X, RuntimeException> cf = collectionFilter0(pred);
 		return new CollectionFilter<X>() {
-			@Implement public Collection<X> filtered(Collection<X> c) {
+			@Override
+			public Collection<X> filtered(Collection<X> c) {
 				return cf.filtered(c);
 			}
 		};
@@ -258,7 +229,8 @@ public class CollUtils {
 	/** @return an object that can filter collections based on the given predicate */
 	private static <X, Z extends Exception> ECollectionFilter<X, Z> collectionFilter0(final EPredicate<? super X, Z> pred) {
 		return new ECollectionFilter<X, Z>() {
-			@Implement public Collection<X> filtered(Collection<X> c) throws Z {
+			@Override
+			public Collection<X> filtered(Collection<X> c) throws Z {
 				if (pred == null) return c;
 				
 				List<X> a = Empty.list();
@@ -353,23 +325,6 @@ public class CollUtils {
 		return retainAllAll(set, sets);
 	}
 
-	/**
-	 * @return intersection between all the sets
-	 * 
-	 * This is a non-destructive version of intersectionInplace
-	 * and will create a new hashSet to hold the final result
-	 */
-	public static <X> Set<X> intersection(Collection<Set<X>> sets) {
-		if (sets.isEmpty()) return Empty.hashSet();
-		if (sets.size() == 1) return Empty.hashSet(CollUtils.getOnlyElement(sets));
-		
-		// see comments in intersectionInplace for why we are doing this
-		List<Set<X>> data = sortedCopy(sets, sortBySizeReversed);
-		Set<X> intersection = Empty.hashSet(data.remove(data.size() - 1));
-		
-		return retainAllAll(intersection, data);
-	}
-
 	private static <X> Set<X> retainAllAll(Set<X> set, Collection<Set<X>> sets) {
 		// it's important that we're retaining with sets, because it will perform something like:
 		// for item in sets:
@@ -381,6 +336,7 @@ public class CollUtils {
 	}
 	
 	private static Comparator<Collection<?>> sortBySizeReversed = new Comparator<Collection<?>>() {
+		@Override
 		public int compare(Collection<?> o1, Collection<?> o2) {
 			// swap o1 and o2 to reverse ordering
 			return ((Integer)o2.size()).compareTo(o1.size());
@@ -392,15 +348,6 @@ public class CollUtils {
 		Map<K, V> m = Empty.linkedHashMap();
 		for (K k : CollUtils.sortedCopy(map.keySet())) m.put(k, map.get(k));
 		return m;
-	}
-
-	/** Check if the first element in the list is Comparable, and if so try to sort, otherwise copy and return.
-	 *
-	 * All elements in the list must be Comparable with eachother - or not at all. */
-	@SuppressWarnings({ "unchecked", "cast" }) // and can never be safe
-	public static <X> List<X> sortedIfPossible(Collection<X> c, Comparator comp) {
-		if (c.isEmpty()) return Collections.emptyList();
-		return CollUtils.sortedCopy( (Collection<? extends Comparable>) c, comp);
 	}
 
 	/** Sort the given list and return a reference to it */
@@ -445,22 +392,6 @@ public class CollUtils {
 		Map<K, V> m = Empty.linkedHashMap();
 		for (V v : sortedCopy(map.values(), comp)) m.put(im.get(v), v);
 		return m;
-	}
-
-	/** Check if the first element in the list is Comparable, and if so try to sort, otherwise copy and return.
-	 *
-	 * All elements in the list must be Comparable with eachother - or not at all. */
-	@SuppressWarnings("unchecked") // and can never be safe
-	public static <X> List<X> sortedIfPossible(Collection<X> c) {
-		if (c.isEmpty()) return Collections.emptyList();
-		if (c.iterator().next() instanceof Comparable) return (List<X>) sortedCopy( (Collection<? extends Comparable>) c);
-		return new ArrayList<X>(c);
-	}
-
-	/** Use the given comparator to create a sorted list with the elements from the collection. */
-	@SuppressWarnings("unchecked") // by design
-	public static <X> List<X> sortedUnsafe(Collection<X> c, Comparator<?> comp) {
-		return sortedCopy(c, (Comparator<X>) comp);
 	}
 
 	/** @return the concatenation of the two collections */

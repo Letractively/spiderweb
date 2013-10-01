@@ -34,6 +34,7 @@ public class HtmlString extends StringBase implements Htmlable {
 	
 	/** String template attribute renderer used for rendering HtmlStrings. */
 	public static final AttributeRenderer ST_RENDERER = new SimpleAttributeRenderer() {
+		@Override
 		public String toString(Object o) {
 			return ((HtmlString)o).asString();
 		}
@@ -107,10 +108,12 @@ public class HtmlString extends StringBase implements Htmlable {
 		super(s);
 	}
 	
+	@Override
 	public CharSequence subSequence(int arg0, int arg1) {
 		return new HtmlString(s.substring(arg0, arg1));
 	}
 	
+	@Override
 	public HtmlString getHtml() {
 		return this;
 	}

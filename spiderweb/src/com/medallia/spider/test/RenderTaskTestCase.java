@@ -61,9 +61,13 @@ public abstract class RenderTaskTestCase extends StRenderTestCase<IRenderTask> {
 	protected ServletMock makeServletMock(Class<? extends SpiderServlet> servletClass) throws Exception {
 		final SpiderServlet servlet = servletClass.newInstance();
 		servlet.init(new ServletConfig() {
+			@Override
 			public String getServletName() { return null; }
+			@Override
 			public String getInitParameter(String arg0) { return null; }
+			@Override
 			public Enumeration getInitParameterNames() { return null; }
+			@Override
 			public ServletContext getServletContext() {
 				return new ServletContextAdapter() {
 					@Override public String getRealPath(String relativePath) {
@@ -73,9 +77,11 @@ public abstract class RenderTaskTestCase extends StRenderTestCase<IRenderTask> {
 			}
 		});
 		return new ServletMock() {
+			@Override
 			public void service(HttpServletRequest req, HttpServletResponse res) throws Exception {
 				servlet.service(req, res);
 			}
+			@Override
 			public void destroy() {
 				servlet.destroy();
 			}

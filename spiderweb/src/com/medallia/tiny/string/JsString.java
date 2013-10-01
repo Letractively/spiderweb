@@ -23,7 +23,6 @@ import org.antlr.stringtemplate.AttributeRenderer;
 
 import com.medallia.tiny.Empty;
 import com.medallia.tiny.Encoding;
-import com.medallia.tiny.Implement;
 import com.medallia.tiny.string.StringTemplateBuilder.SimpleAttributeRenderer;
 
 /**
@@ -34,6 +33,7 @@ import com.medallia.tiny.string.StringTemplateBuilder.SimpleAttributeRenderer;
 public class JsString extends StringBase {
 	/** String template attribute renderer used for rendering JsStrings. */
 	public static final AttributeRenderer ST_RENDERER = new SimpleAttributeRenderer() {
+		@Override
 		public String toString(Object o) {
 			return ((JsString)o).inScript().asString();
 		}
@@ -176,7 +176,8 @@ public class JsString extends StringBase {
 		return sb.toString();
 	}
 	
-	@Implement public JsString subSequence(int arg0, int arg1) {
+	@Override
+	public JsString subSequence(int arg0, int arg1) {
 		return new JsString(s.substring(arg0,arg1));
 	}
 
